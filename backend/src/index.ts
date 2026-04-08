@@ -72,3 +72,14 @@ app.get("/api/hello", (req: Request, res: Response) => {
 app.get("/api/products", (req: Request, res: Response) => {
   res.json(products);
 });
+
+app.get("/api/products/:id", (req: Request<{ id: string }>, res: Response) => {
+  const id = parseInt(req.params.id);
+  const product = products.find((p) => p.id === id);
+
+  if (!product) {
+    return res.status(404).json({ error: "Producto no encontrado" });
+  }
+
+  res.json(product);
+});

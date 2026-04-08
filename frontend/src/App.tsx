@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Product } from "./types";
+import ProductCard from "./components/ProductCard";
 
 function App() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -12,28 +13,11 @@ function App() {
   }, []);
 
   return (
-    <div>
+    <div className="products-grid">
       <h1>CustomShop</h1>
-      <table>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Precio</th>
-            <th>Categoria</th>
-            <th>Stock</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map((product) => (
-            <tr key={product.id}>
-              <td>{product.name}</td>
-              <td>{product.price}</td>
-              <td>{product.category}</td>
-              <td>{product.stock}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {products.map((product) => (
+        <ProductCard key={product.id} product={product} />
+      ))}
     </div>
   );
 }
