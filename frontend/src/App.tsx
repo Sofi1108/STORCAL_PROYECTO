@@ -8,7 +8,7 @@ import ProductDetail from "./components/ProductDetail";
 function App() {
   const navigate = useNavigate();
   const PORT = 3000;
-  const ROUTE = "http://localhost:${PORT}/"
+  const ROUTE = `http://localhost:${PORT}/`;
 
   const [products, setProducts] = useState<Product[]>([]);
   const [newName,        setNewName]        = useState("");
