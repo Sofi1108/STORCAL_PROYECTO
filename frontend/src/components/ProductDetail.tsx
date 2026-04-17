@@ -26,7 +26,6 @@ function ProductDetail() {
       });
   }, [id]);
 
-  // Si hubo error en el fetch, mostramos un mensaje o redirigimos
   if (error) {
     return (
       <div className="product-detail">

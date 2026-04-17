@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import type { Product } from "./types";
 import ProductCard from "./components/ProductCard";
 import { useNavigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import ProductDetail from "./components/ProductDetail";
 
 function App() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -81,34 +83,34 @@ function App() {
       .catch((error) => console.error("Error:", error));
   };
 
-  return (
-    <>
-      <form className="add-product-form" onSubmit={handleSubmit}>
-        <input type="text"   placeholder="Nombre *"    value={newName}        onChange={e => setNewName(e.target.value)} />
-        <input type="text"   placeholder="Descripción" value={newDescription} onChange={e => setNewDescription(e.target.value)} />
-        <input type="number" step="0.01" placeholder="Precio *" value={newPrice} onChange={e => setNewPrice(e.target.value)} />
-        <input type="text"   placeholder="Categoría"  value={newCategory}    onChange={e => setNewCategory(e.target.value)} />
-        <input type="number" placeholder="Stock"       value={newStock}       onChange={e => setNewStock(e.target.value)} />
-        <button type="submit">Añadir producto</button>
-      </form>
-      <div className="products-grid">
-        {products.map((product) => (
-          <div key={product.id} className="product-card-container">
-            <ProductCard product={product} onSelect={(id) => navigate(`product/${id}`)} />
-            <div className="product-card actions">
-              <button title="Editar stock"
-                onClick={() => handleUpdateStock(product.id, product.stock)}>
-                ✏️
-              </button>
-              <button title="Borrar" className="btn-danger"
-                onClick={() => handleDelete(product.id)}>
-                🗑️
-              </button>
-            </div>
+return (
+    <Routes>
+      <Route path="/" element={
+        <>
+            <form className="add-product-form" onSubmit={handleSubmit}>
+            <input type="text"   placeholder="Nombre *"    value={newName}        onChange={e => setNewName(e.target.value)} />
+            <input type="text"   placeholder="Descripción" value={newDescription} onChange={e => setNewDescription(e.target.value)} />
+            <input type="number" step="0.01" placeholder="Precio *" value={newPrice} onChange={e => setNewPrice(e.target.value)} />
+            <input type="text"   placeholder="Categoría"  value={newCategory}    onChange={e => setNewCategory(e.target.value)} />
+            <input type="number" placeholder="Stock"       value={newStock}       onChange={e => setNewStock(e.target.value)} />
+            <button type="submit">Añadir producto</button>
+          </form>
+          <div className="products-grid">
+            {products.map((product) => (
+              <div key={product.id} className="product-card-container">
+                <ProductCard product={product} onSelect={(id) => navigate(`/product/${id}`)}/>
+                <div className="product-card actions">
+                   <button onClick={(e) => { e.stopPropagation(); handleUpdateStock(product.id, product.stock); }}>✏️</button>
+                   <button className="btn-danger" onClick={(e) => { e.stopPropagation(); handleDelete(product.id); }}>🗑️</button>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </>
+        </>
+      } />
+
+      <Route path="/product/:id" element={<ProductDetail />} />
+    </Routes>
   );
 }
 
