@@ -1,18 +1,15 @@
-import { createRoot } from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import App from "./App";
-import ProductDetail from "./components/ProductDetail";
-import NotFound from "./components/NotFound.tsx";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App.tsx";
+import Header from "./components/Header.tsx";
 import "./index.css";
+import { BrowserRouter } from "react-router-dom";
 
-createRoot(document.getElementById("root")!).render(
-  <BrowserRouter>
-    <Routes>
-      <Route path="/" element={<App />} />
-
-      <Route path="product/:id" element={<ProductDetail />} />
-
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  </BrowserRouter>,
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <Header />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
 );

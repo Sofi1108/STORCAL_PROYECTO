@@ -8,10 +8,11 @@ interface ProductCardProps {
 function ProductCard({ product, onSelect }: ProductCardProps) {
   return (
     <div
-      className="product-card"
+      className="products-card"
       onClick={() => onSelect && onSelect(product.id)}
     >
       <img src={product.imageUrl} alt={product.name} />
+      <div className="Textos">
       <h2>{product.name}</h2>
       <p>{product.description}</p>
       <p className="price">{product.price.toFixed(2)}€</p>
@@ -21,6 +22,7 @@ function ProductCard({ product, onSelect }: ProductCardProps) {
           ? `En stock - ${product.stock} unidades`
           : "Sin stock - 0 unidades"}
       </p>
+      </div>
     </div>
   );
 }

@@ -7,25 +7,108 @@ function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetch(`http://localhost:3000/api/products`)
+
+  const [newName,        setNewName]        = useState("");
+  const [newPrice,       setNewPrice]       = useState("");
+  const [newCategory,    setNewCategory]    = useState("");
+  const [newStock,       setNewStock]       = useState("");
+  const [newDescription, setNewDescription] = useState("");
+
+  const loadProducts = (): void => {
+    fetch("http://localhost:3000/api/products")
       .then((res) => res.json())
-      .then((data) => setProducts(data))
-      .catch((error) => console.error("Error", error));
-  }, []);
+      .then((data: Product[]) => setProducts(data))
+      .catch((error) => console.error("Error:", error));
+  };
+
+  useEffect(() => { loadProducts(); }, []);
+
+    const handleUpdateStock = (id: number, currentStock: number): void => {
+    const input = window.prompt(`Stock actual: ${currentStock}. Nuevo stock:`);
+    if (input === null) return;
+    const newStock = parseInt(input);
+    if (isNaN(newStock) || newStock < 0) {
+      alert("El stock debe ser un número mayor o igual a 0");
+      return;
+    }
+    fetch(`http://localhost:3000/api/products/${id}`, {
+      method:  "PUT",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ stock: newStock })
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Error del servidor: " + res.status);
+        return res.json();
+      })
+      .then(() => loadProducts())
+      .catch((error) => console.error("Error:", error));
+  };
+  
+  const handleDelete = (id: number): void => {
+    if (!window.confirm("¿Seguro que quieres borrar este producto?")) return;
+    fetch(`http://localhost:3000/api/products/${id}`, { method: "DELETE" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Error del servidor: " + res.status);
+        return res.json();
+      })
+      .then(() => loadProducts())
+      .catch((error) => console.error("Error:", error));
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+    fetch("http://localhost:3000/api/products", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({
+        name:        newName,
+        price:       parseFloat(newPrice),
+        description: newDescription || undefined,
+        category:    newCategory || undefined,
+        stock:       newStock ? parseInt(newStock) : undefined
+      })
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Error " + res.status);
+        return res.json();
+      })
+      .then(() => {
+        setNewName(""); setNewPrice("");
+        setNewCategory(""); setNewStock("");
+        setNewDescription("");
+        loadProducts();
+      })
+      .catch((error) => console.error("Error:", error));
+  };
 
   return (
-    <div className="products-grid">
-      <h1>CustomShop</h1>
-      {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          // Al hacer clic, navegamos a la ruta del producto
-          onSelect={(id) => navigate(`product/${id}`)}
-        />
-      ))}
-    </div>
+    <>
+      <form className="add-product-form" onSubmit={handleSubmit}>
+        <input type="text"   placeholder="Nombre *"    value={newName}        onChange={e => setNewName(e.target.value)} />
+        <input type="text"   placeholder="Descripción" value={newDescription} onChange={e => setNewDescription(e.target.value)} />
+        <input type="number" step="0.01" placeholder="Precio *" value={newPrice} onChange={e => setNewPrice(e.target.value)} />
+        <input type="text"   placeholder="Categoría"  value={newCategory}    onChange={e => setNewCategory(e.target.value)} />
+        <input type="number" placeholder="Stock"       value={newStock}       onChange={e => setNewStock(e.target.value)} />
+        <button type="submit">Añadir producto</button>
+      </form>
+      <div className="products-grid">
+        {products.map((product) => (
+          <div key={product.id} className="product-card-container">
+            <ProductCard product={product} onSelect={(id) => navigate(`product/${id}`)} />
+            <div className="product-card actions">
+              <button title="Editar stock"
+                onClick={() => handleUpdateStock(product.id, product.stock)}>
+                ✏️
+              </button>
+              <button title="Borrar" className="btn-danger"
+                onClick={() => handleDelete(product.id)}>
+                🗑️
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
