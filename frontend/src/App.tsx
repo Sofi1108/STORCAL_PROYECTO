@@ -7,6 +7,8 @@ import ProductDetail from "./components/ProductDetail";
 
 function App() {
   const navigate = useNavigate();
+  const PORT = 3000;
+  const ROUTE = "http://localhost:${PORT}/"
 
   const [products, setProducts] = useState<Product[]>([]);
   const [newName,        setNewName]        = useState("");
@@ -16,7 +18,7 @@ function App() {
   const [newDescription, setNewDescription] = useState("");
 
   const loadProducts = (): void => {
-    fetch("http://localhost:3000/api/products")
+    fetch(``)
       .then((res) => res.json())
       .then((data: Product[]) => setProducts(data))
       .catch((error) => console.error("Error:", error));
@@ -32,7 +34,7 @@ function App() {
       alert("El stock debe ser un número mayor o igual a 0");
       return;
     }
-    fetch(`http://localhost:3000/api/products/${id}`, {
+    fetch(`${ROUTE}api/products/${id}`, {
       method:  "PUT",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({ stock: newStock })
@@ -47,7 +49,7 @@ function App() {
   
   const handleDelete = (id: number): void => {
     if (!window.confirm("¿Seguro que quieres borrar este producto?")) return;
-    fetch(`http://localhost:3000/api/products/${id}`, { method: "DELETE" })
+    fetch(`${ROUTE}api/products/${id}`, { method: "DELETE" })
       .then((res) => {
         if (!res.ok) throw new Error("Error del servidor: " + res.status);
         return res.json();
