@@ -6,10 +6,9 @@ import { Routes, Route } from "react-router-dom";
 import ProductDetail from "./components/ProductDetail";
 
 function App() {
-  const [products, setProducts] = useState<Product[]>([]);
   const navigate = useNavigate();
 
-
+  const [products, setProducts] = useState<Product[]>([]);
   const [newName,        setNewName]        = useState("");
   const [newPrice,       setNewPrice]       = useState("");
   const [newCategory,    setNewCategory]    = useState("");
