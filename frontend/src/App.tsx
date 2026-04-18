@@ -26,7 +26,7 @@ function App() {
 
   useEffect(() => { loadProducts(); }, []);
 
-    const handleUpdateStock = (id: number, currentStock: number): void => {
+    const handleUpdateStock = (id: number, name: string, description: string, price: number, category: string,image_url: string, currentStock: number): void => {
     const input = window.prompt(`Stock actual: ${currentStock}. Nuevo stock:`);
     if (input === null) return;
     const newStock = parseInt(input);
@@ -101,7 +101,7 @@ return (
               <div key={product.id} className="product-card-container">
                 <ProductCard product={product} onSelect={(id) => navigate(`/product/${id}`)}/>
                 <div className="product-card actions">
-                   <button onClick={(e) => { e.stopPropagation(); handleUpdateStock(product.id, product.stock); }}>✏️</button>
+                   <button onClick={(e) => { e.stopPropagation(); handleUpdateStock(product.id, product.name, product.description, product.price, product.category, product.image_url,product.stock); }}>✏️</button>
                    <button className="btn-danger" onClick={(e) => { e.stopPropagation(); handleDelete(product.id); }}>🗑️</button>
                 </div>
               </div>

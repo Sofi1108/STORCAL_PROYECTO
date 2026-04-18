@@ -80,9 +80,9 @@ name: string; description?: string; price: number;
 });
 
 // Actualizar stock
-app.put("/api/products/:id", async (req: Request<{ id: string }, {}, { stock: number }>, res: Response) => {
-    const id      = parseInt(req.params.id);
-    const { stock } = req.body;
+app.put("/api/products/:id", async (req: Request<{ id: string }, {}, { name: string, description: string, price: number, category: string, stock: number, image_url: string }>, res: Response) => {
+    const id = parseInt(req.params.id);
+    const { name, description, price, category, stock, image_url } = req.body;
 
     const result = await pool.query("UPDATE products SET stock = $1 WHERE id = $2 RETURNING *",[stock, id]);
     
