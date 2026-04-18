@@ -2,62 +2,15 @@ import express from "express";
 import type { Request, Response } from "express";
 import cors from "cors";
 import type { Product } from "./types.ts";
+import { pool } from "../db.js";
 
 const app = express();
 const PORT = 3000;
 
-const products: Product[] = [
-  {
-    id: 1,
-    name: "Camiseta Unboxing",
-    description: "Camiseta negra con diseño retro de unboxing.",
-    price: 19.99,
-    category: "Ropa",
-    stock: 50,
-    imageUrl: "https://placehold.co/200x200?text=Camiseta",
-  },
-  {
-    id: 2,
-    name: "Taza Bug Hunter",
-    description: "Taza blanca con mensaje para programadores.",
-    price: 12.5,
-    category: "Cocina",
-    stock: 30,
-    imageUrl: "https://placehold.co/200x200?text=Taza",
-  },
-  {
-    id: 3,
-    name: "Funda Dark Mode",
-    description: "Funda para móvil con diseño minimalista.",
-    price: 15.0,
-    category: "Accesorios",
-    stock: 20,
-    imageUrl: "https://placehold.co/200x200?text=Funda",
-  },
-  {
-    id: 4,
-    name: "Sudadera npm ci",
-    description: "Sudadera gris con eslogan de desarrollo.",
-    price: 35.0,
-    category: "Ropa",
-    stock: 15,
-    imageUrl: "https://placehold.co/200x200?text=Sudadera",
-  },
-  {
-    id: 5,
-    name: "Sticker Pack Dev",
-    description: "Set de 10 stickers con iconos tech.",
-    price: 5.99,
-    category: "Papelería",
-    stock: 100,
-    imageUrl: "https://placehold.co/200x200?text=Stickers",
-  },
-];
 
 app.use(cors());
 app.use(express.json());
 
-let nextId = products.length + 1;
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
@@ -71,26 +24,31 @@ app.get("/api/hello", (req: Request, res: Response) => {
   res.json({ message: "Hola desde el backend" });
 });
 
-app.get("/api/products", (req: Request, res: Response) => {
-  res.json(products);
+app.get("/api/products", async (req: Request, res: Response) => {
+  const result = await pool.query("SELECT * FROM products ORDER BY id");
+  res.json(result.rows); // ← devuelve las filas de la BD
 });
 
-app.get("/api/products/:id", (req: Request<{ id: string }>, res: Response) => {
+app.get("/api/products/:id", async (req: Request<{ id: string }>, res: Response) => {
   const id = parseInt(req.params.id);
-  const product = products.find((p) => p.id === id);
+  const result = await pool.query("SELECT * FROM products WHERE id=$1", [id]);
 
-  if (!product) {
-    return res.status(404).json({ error: "Producto no encontrado" });
+  if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Producto no encontrado" });
   }
-
-  res.json(product);
+  res.json(result.rows[0]);
 });
 
-app.post("/api/products", (req: Request<{}, {}, {
-    name: string; description?: string; price: number;
-    category?: string; stock?: number; imageUrl?: string;
+app.get("/api/test", async (req: Request, res: Response) => {
+const result = await pool.query("SELECT NOW()");
+res.json({ connected: true, time: result.rows[0].now });
+});
+
+app.post("/api/products", async (req: Request<{}, {}, {
+name: string; description?: string; price: number;
+    category?: string; stock?: number; image_url?: string;
 }>, res: Response) => {
-    const { name, description, price, category, stock, imageUrl } = req.body;
+    const { name, description, price, category, stock, image_url } = req.body;
 
     if (!name) {
         return res.status(400).json({ error: "El nombre es obligatorio" });
@@ -102,26 +60,33 @@ app.post("/api/products", (req: Request<{}, {}, {
         return res.status(400).json({ error: "El stock no puede ser negativo" });
     }
 
-    const newProduct: Product = {
-        id:          nextId++,
-        name:        name,
-        description: description ?? "",
-        price:       Math.round(price * 100) / 100,
-        category:    category ?? "General",
-        stock:       stock ?? 0,
-        imageUrl:    imageUrl ?? `https://placehold.co/200x200?text=${encodeURIComponent(name)}`
-    };
+    const result = await pool.query(
+        `INSERT INTO products (name, description, price, category, stock, image_url)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [
+            name, 
+            description ?? "", 
+            Math.round(price * 100) / 100, 
+            category ?? "General", 
+            stock ?? 0, 
+            image_url ?? `https://placehold.co/200x200?text=${encodeURIComponent(name)}`
+        ]
+    );
 
-    products.push(newProduct);
+    const newProduct = result.rows[0];
+
     res.status(201).json({ message: "Producto añadido correctamente", product: newProduct });
 });
 
 // Actualizar stock
-app.put("/api/products/:id", (req: Request<{ id: string }, {}, { stock: number }>, res: Response) => {
+app.put("/api/products/:id", async (req: Request<{ id: string }, {}, { stock: number }>, res: Response) => {
     const id      = parseInt(req.params.id);
     const { stock } = req.body;
-    const product = products.find((p) => p.id === id);
-    if (!product) {
+
+    const result = await pool.query("UPDATE products SET stock = $1 WHERE id = $2 RETURNING *",[stock, id]);
+    
+    if (result.rows.length === 0) {
         res.status(404).json({ error: "Producto no encontrado" });
         return;
     }
@@ -129,19 +94,17 @@ app.put("/api/products/:id", (req: Request<{ id: string }, {}, { stock: number }
         res.status(400).json({ error: "El stock debe ser mayor o igual a 0" });
         return;
     }
-    product.stock = stock;
-    res.json({ message: "Stock actualizado", product });
+    res.json({ message: "Stock actualizado", product: result.rows[0] });
 });
 
 // Eliminar
-app.delete("/api/products/:id", (req: Request<{ id: string }>, res: Response) => {
+app.delete("/api/products/:id", async (req: Request<{ id: string }>, res: Response) => {
     const id    = parseInt(req.params.id);
-    const index = products.findIndex((p) => p.id === id);
-    if (index === -1) {
+    const result = await pool.query("SELECT * FROM products WHERE id=$1 RETURNING *", [id]);
+
+    if (result.rows.length === 0) {
         res.status(404).json({ error: "Producto no encontrado" });
         return;
     }
-    const deleted = products[index];
-    products.splice(index, 1);
-    res.json({ message: "Producto eliminado", product: deleted });
+    res.json({ message: "Producto eliminado", product: result.rows[0]});
 });

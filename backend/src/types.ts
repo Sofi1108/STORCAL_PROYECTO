@@ -5,5 +5,5 @@ export interface Product {
   price: number; // precio en euros
   category: string;
   stock: number; //cuantos quedan
-  imageUrl: string;
+  image_url: string;
 }

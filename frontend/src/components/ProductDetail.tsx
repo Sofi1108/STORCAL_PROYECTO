@@ -47,7 +47,7 @@ function ProductDetail() {
 
       <img
         className="product-detail_img"
-        src={product.imageUrl}
+        src={product.image_url}
         alt={product.name}
       />
 

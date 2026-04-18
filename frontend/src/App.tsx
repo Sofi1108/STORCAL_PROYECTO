@@ -18,7 +18,7 @@ function App() {
   const [newDescription, setNewDescription] = useState("");
 
   const loadProducts = (): void => {
-    fetch(``)
+    fetch(`${ROUTE}api/products`)
       .then((res) => res.json())
       .then((data: Product[]) => setProducts(data))
       .catch((error) => console.error("Error:", error));
