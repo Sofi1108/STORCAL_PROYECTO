@@ -75,12 +75,15 @@ body {
 .products-grid > div {
   background-color: white;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  position: relative;
 }
 
 .products-grid > div:hover {
@@ -93,11 +96,10 @@ body {
   cursor: pointer;
 }
 
-
 .products-card img {
   width: 100%;
-  height: 200px; 
-  object-fit: cover; 
+  height: 200px;
+  object-fit: cover;
   display: block;
 }
 
@@ -124,10 +126,10 @@ body {
 
 .product-card.actions {
   display: flex;
-  flex-direction: row;    
-  justify-content: center;   
-  align-items: center;      
-  gap: 1rem;              
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
   padding: 1rem;
   background-color: #f8fafc;
   border-top: 1px solid #e2e8f0;
@@ -136,11 +138,11 @@ body {
 }
 
 .Textos {
-  padding: 1.5rem;   
-  text-align: left; 
+  padding: 1.5rem;
+  text-align: left;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;    
+  gap: 0.5rem;
 }
 
 .product-card.actions button {
@@ -153,7 +155,9 @@ body {
   border-radius: 6px;
   font-size: 1rem;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
   background-color: #f0f0f0;
 }
 
@@ -171,3 +175,35 @@ body {
   transform: scale(1.1);
 }
 
+.product-card.actions button.btn-add {
+  background-color: #d1fae5;
+}
+
+.product-card.actions button.btn-add:hover {
+  background-color: #a7f3d0;
+  transform: scale(1.1);
+}
+
+.btn-add-corner {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  background-color: #d1fae5;
+  transition: background-color 0.2s, transform 0.1s;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-add-corner:hover {
+  background-color: #a7f3d0;
+  transform: scale(1.1);
+}

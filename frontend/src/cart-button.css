@@ -1,0 +1,115 @@
+.cart-button-wrapper {
+  position: relative;
+}
+
+.qty-badge {
+  position: absolute;
+  top: -0.4rem;
+  right: -0.4rem;
+  background-color: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 1.3rem;
+  height: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.cart-menu {
+  position: absolute;
+  bottom: -160px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 160px;
+  z-index: 20;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%) translateY(10px);
+  transition:
+    opacity 0.2s,
+    visibility 0.2s,
+    transform 0.2s;
+  padding: 0.5rem 0;
+}
+
+.cart-button-wrapper:hover .cart-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.9rem;
+}
+
+.menu-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.menu-value {
+  background-color: #f0f0f0;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-weight: bold;
+  color: #222;
+}
+
+.menu-btn {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.menu-btn:last-child {
+  border-bottom: none;
+}
+
+.menu-btn.add {
+  color: #16a34a;
+}
+
+.menu-btn.add:hover:not(:disabled) {
+  background-color: #dcfce7;
+}
+
+.menu-btn.decrease {
+  color: #ea580c;
+}
+
+.menu-btn.decrease:hover {
+  background-color: #fed7aa;
+}
+
+.menu-btn.remove {
+  color: #ef4444;
+}
+
+.menu-btn.remove:hover {
+  background-color: #fee2e2;
+}
+
+.menu-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

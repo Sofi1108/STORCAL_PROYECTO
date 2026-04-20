@@ -7,10 +7,8 @@ import { pool } from "../db.js";
 const app = express();
 const PORT = 3000;
 
-
 app.use(cors());
 app.use(express.json());
-
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
@@ -25,86 +23,177 @@ app.get("/api/hello", (req: Request, res: Response) => {
 });
 
 app.get("/api/products", async (req: Request, res: Response) => {
-  const result = await pool.query("SELECT * FROM products ORDER BY id");
+  const result = await pool.query(
+    "SELECT * FROM products WHERE deleted_at IS NULL ORDER BY id",
+  );
   res.json(result.rows); // ← devuelve las filas de la BD
 });
 
-app.get("/api/products/:id", async (req: Request<{ id: string }>, res: Response) => {
-  const id = parseInt(req.params.id);
-  const result = await pool.query("SELECT * FROM products WHERE id=$1", [id]);
-
-  if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Producto no encontrado" });
-  }
-  res.json(result.rows[0]);
+app.get("/api/products/inactive", async (req: Request, res: Response) => {
+  const result = await pool.query(
+    "SELECT * FROM products WHERE active = false ORDER BY id",
+  );
+  res.json(result.rows); // ← devuelve las filas de la BD
 });
+
+app.get(
+  "/api/products/:id",
+  async (req: Request<{ id: string }>, res: Response) => {
+    const id = parseInt(req.params.id);
+    const result = await pool.query("SELECT * FROM products WHERE id=$1", [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+    res.json(result.rows[0]);
+  },
+);
 
 app.get("/api/test", async (req: Request, res: Response) => {
-const result = await pool.query("SELECT NOW()");
-res.json({ connected: true, time: result.rows[0].now });
+  const result = await pool.query("SELECT NOW()");
+  res.json({ connected: true, time: result.rows[0].now });
 });
 
-app.post("/api/products", async (req: Request<{}, {}, {
-name: string; description?: string; price: number;
-    category?: string; stock?: number; image_url?: string;
-}>, res: Response) => {
+app.post(
+  "/api/products",
+  async (
+    req: Request<
+      {},
+      {},
+      {
+        name: string;
+        description?: string;
+        price: number;
+        category?: string;
+        stock?: number;
+        image_url?: string;
+      }
+    >,
+    res: Response,
+  ) => {
     const { name, description, price, category, stock, image_url } = req.body;
 
     if (!name) {
-        return res.status(400).json({ error: "El nombre es obligatorio" });
+      return res.status(400).json({ error: "El nombre es obligatorio" });
     }
     if (price === undefined || price <= 0) {
-        return res.status(400).json({ error: "El precio debe ser mayor que 0" });
+      return res.status(400).json({ error: "El precio debe ser mayor que 0" });
     }
     if (stock !== undefined && stock < 0) {
-        return res.status(400).json({ error: "El stock no puede ser negativo" });
+      return res.status(400).json({ error: "El stock no puede ser negativo" });
     }
 
     const result = await pool.query(
-        `INSERT INTO products (name, description, price, category, stock, image_url)
+      `INSERT INTO products (name, description, price, category, stock, image_url)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        [
-            name, 
-            description ?? "", 
-            Math.round(price * 100) / 100, 
-            category ?? "General", 
-            stock ?? 0, 
-            image_url ?? `https://placehold.co/200x200?text=${encodeURIComponent(name)}`
-        ]
+      [
+        name,
+        description ?? "",
+        Math.round(price * 100) / 100,
+        category ?? "General",
+        stock ?? 0,
+        image_url ??
+          `https://placehold.co/200x200?text=${encodeURIComponent(name)}`,
+      ],
     );
 
     const newProduct = result.rows[0];
 
-    res.status(201).json({ message: "Producto añadido correctamente", product: newProduct });
-});
+    res
+      .status(201)
+      .json({ message: "Producto añadido correctamente", product: newProduct });
+  },
+);
 
 // Actualizar stock
-app.put("/api/products/:id", async (req: Request<{ id: string }, {}, { name: string, description: string, price: number, category: string, stock: number, image_url: string }>, res: Response) => {
+app.put(
+  "/api/products/:id",
+  async (
+    req: Request<
+      { id: string },
+      {},
+      {
+        name: string;
+        description: string;
+        price: number;
+        category: string;
+        stock: number;
+        image_url: string;
+      }
+    >,
+    res: Response,
+  ) => {
     const id = parseInt(req.params.id);
     const { name, description, price, category, stock, image_url } = req.body;
 
-    const result = await pool.query("UPDATE products SET stock = $1 WHERE id = $2 RETURNING *",[stock, id]);
-    
+    const result = await pool.query(
+      "UPDATE products SET stock = $1 WHERE id = $2 RETURNING *",
+      [stock, id],
+    );
+
     if (result.rows.length === 0) {
-        res.status(404).json({ error: "Producto no encontrado" });
-        return;
+      res.status(404).json({ error: "Producto no encontrado" });
+      return;
     }
     if (stock === undefined || stock < 0) {
-        res.status(400).json({ error: "El stock debe ser mayor o igual a 0" });
-        return;
+      res.status(400).json({ error: "El stock debe ser mayor o igual a 0" });
+      return;
     }
     res.json({ message: "Stock actualizado", product: result.rows[0] });
-});
+  },
+);
 
 // Eliminar
-app.delete("/api/products/:id", async (req: Request<{ id: string }>, res: Response) => {
-    const id    = parseInt(req.params.id);
-    const result = await pool.query("SELECT * FROM products WHERE id=$1 RETURNING *", [id]);
+app.delete(
+  "/api/products/:id",
+  async (req: Request<{ id: string }>, res: Response) => {
+    const inOrders = await pool.query(
+      "SELECT 1 FROM order_items WHERE product_id = $1 LIMIT 1",
+      [parseInt(req.params.id)],
+    );
+
+    if (inOrders.rows.length > 0) {
+      const result = await pool.query(
+        "UPDATE products SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL RETURNING *",
+        [parseInt(req.params.id)],
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Producto no encontrado" });
+      }
+      res.json({
+        message: "Producto eliminado (soft)",
+        product: result.rows[0],
+      });
+    }
+    const id = Number(req.params.id);
+    const result = await pool.query(
+      "DELETE FROM products WHERE id = $1 RETURNING *",
+      [id],
+    );
 
     if (result.rows.length === 0) {
-        res.status(404).json({ error: "Producto no encontrado" });
-        return;
+      return res.status(404).json({ error: "Producto no encontrado" });
     }
-    res.json({ message: "Producto eliminado", product: result.rows[0]});
+
+    res.json({ message: "Producto eliminado", product: result.rows[0] });
+  },
+);
+
+app.patch("/api/products/:id/toggle", async (req, res) => {
+  const result = await pool.query(
+    "UPDATE products SET active = NOT active WHERE id = $1 AND deleted_at IS NULL RETURNING *",
+    [parseInt(req.params.id)],
+  );
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({ error: "Producto no encontrado" });
+  }
+  const p = result.rows[0];
+
+  res.json({
+    message: `Producto ${p.active ? "activado" : "desactivado"}`,
+    product: p,
+  });
 });
