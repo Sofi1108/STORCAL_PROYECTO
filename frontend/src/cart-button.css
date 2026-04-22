@@ -113,3 +113,63 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.cart-button-detail {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+
+.cart-button-detail .btn-add-corner {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: auto;
+  height: auto;
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  background-color: #16a34a;
+  color: white;
+  border: 2px solid #16a34a;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+  transition: all 0.3s ease;
+}
+
+.cart-button-detail .btn-add-corner:hover:not(:disabled) {
+  background-color: #15803d;
+  border-color: #15803d;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.4);
+}
+
+.cart-button-detail .btn-add-corner:disabled {
+  background-color: #cbd5e1;
+  border-color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.cart-button-detail .qty-badge {
+  position: static;
+  margin-left: 0.5rem;
+  width: auto;
+  height: auto;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+}
+
+.cart-button-detail .cart-menu {
+  position: absolute;
+  top: auto;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  min-width: 200px;
+  margin-bottom: 0.5rem;
+}
+
+.cart-button-detail:hover .cart-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-10px);
+}

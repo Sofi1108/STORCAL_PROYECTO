@@ -3,13 +3,14 @@ import "../cart.css";
 
 interface CartProps {
   items: CartItem[];
+  onDecreaseQuantity?: (productId: number) => void;
 }
 
-export default function Cart({ items }: CartProps) {
+export default function Cart({ items, onDecreaseQuantity }: CartProps) {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
-    0
+    0,
   );
 
   return (
@@ -32,6 +33,15 @@ export default function Cart({ items }: CartProps) {
                   <span className="item-price">
                     ${(item.product.price * item.quantity).toFixed(2)}
                   </span>
+                  <button
+                    className="item-btn decrease"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDecreaseQuantity?.(item.product.id);
+                    }}
+                  >
+                    ❌
+                  </button>
                 </div>
               ))}
             </div>

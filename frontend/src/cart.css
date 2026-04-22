@@ -51,7 +51,10 @@
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
+  transition:
+    opacity 0.2s,
+    visibility 0.2s,
+    transform 0.2s;
 }
 
 .cart-widget:hover .cart-popup {
@@ -82,12 +85,17 @@
 
 .cart-item {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto auto auto;
   gap: 0.5rem;
   padding: 0.75rem;
   border-bottom: 1px solid #f0f0f0;
   font-size: 0.85rem;
   align-items: center;
+  transition: background-color 0.2s;
+}
+
+.cart-item:hover {
+  background-color: #fafbff;
 }
 
 .item-name {
@@ -101,6 +109,23 @@
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-weight: bold;
+}
+
+.item-btn {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #ea580c;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
+}
+
+.item-btn:hover {
+  background-color: #fee7d1;
+  transform: translateY(-1px);
 }
 
 .item-price {

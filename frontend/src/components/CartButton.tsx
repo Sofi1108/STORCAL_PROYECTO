@@ -1,7 +1,8 @@
+import { useLocation } from "react-router-dom";
 import type { Product, CartItem } from "../types";
 import "../cart-button.css";
 
-interface CartButtonProps {
+export interface CartButtonProps {
   product: Product;
   cart: CartItem[];
   onAddToCart: (product: Product) => void;
@@ -16,18 +17,23 @@ export default function CartButton({
   onRemoveFromCart,
   onDecreaseQuantity,
 }: CartButtonProps) {
+  const location = useLocation();
+  const isProductDetail = location.pathname.startsWith("/product/");
+
   const cartItem = cart.find((i) => i.product.id === product.id);
   const quantity = cartItem?.quantity ?? 0;
 
   return (
-    <div className="cart-button-wrapper">
+    <div
+      className={`cart-button-wrapper ${isProductDetail ? "cart-button-detail" : ""}`}
+    >
       <button
         className="btn-add-corner"
         onClick={(e) => {
           e.stopPropagation();
           onAddToCart(product);
         }}
-        title="Opciones de carrito"
+        disabled={quantity >= product.stock}
       >
         🛒
         {quantity > 0 && <span className="qty-badge">{quantity}</span>}

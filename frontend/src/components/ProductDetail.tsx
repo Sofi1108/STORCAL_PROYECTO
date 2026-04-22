@@ -1,9 +1,23 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { Product } from "../types";
+import type { Product, CartItem } from "../types";
 import "./product-detail.css";
+import CartButton from "./CartButton";
+import Cart from "./Cart";
 
-function ProductDetail() {
+interface ProductDetailProps {
+  cart: CartItem[];
+  onAddToCart: (product: Product) => void;
+  onRemoveFromCart: (productId: number) => void;
+  onDecreaseQuantity: (productId: number) => void;
+}
+
+function ProductDetail({
+  cart,
+  onAddToCart,
+  onRemoveFromCart,
+  onDecreaseQuantity,
+}: ProductDetailProps) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
@@ -54,6 +68,22 @@ function ProductDetail() {
       <h2>{product.name}</h2>
       <p>{product.description}</p>
       <p className="price">{product.price}€</p>
+      <p className="stock">
+        Stock:{" "}
+        <span className={product.stock > 0 ? "in-stock" : "out-of-stock"}>
+          {product.stock > 0
+            ? `${product.stock} disponible${product.stock !== 1 ? "s" : ""}`
+            : "Sin stock"}
+        </span>
+      </p>
+
+      <CartButton
+        product={product}
+        cart={cart}
+        onAddToCart={onAddToCart}
+        onRemoveFromCart={onRemoveFromCart}
+        onDecreaseQuantity={onDecreaseQuantity}
+      />
     </div>
   );
 }

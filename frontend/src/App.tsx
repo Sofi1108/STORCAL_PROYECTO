@@ -21,7 +21,10 @@ function App() {
   const [newCategory, setNewCategory] = useState("");
   const [newStock, setNewStock] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const saved = sessionStorage.getItem("cart");
+    return saved ? JSON.parse(saved) : [];
+  });
 
   const loadProducts = (): void => {
     fetch(`${ROUTE}api/products`)
@@ -33,6 +36,10 @@ function App() {
   useEffect(() => {
     loadProducts();
   }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
 
   const addToCart = (product: Product): void => {
     setCart((prev) => {
@@ -60,11 +67,9 @@ function App() {
     setCart((prev) =>
       prev
         .map((i) =>
-          i.product.id === productId
-            ? { ...i, quantity: i.quantity - 1 }
-            : i
+          i.product.id === productId ? { ...i, quantity: i.quantity - 1 } : i,
         )
-        .filter((i) => i.quantity > 0)
+        .filter((i) => i.quantity > 0),
     );
   };
 
@@ -142,7 +147,7 @@ function App() {
         path="/"
         element={
           <>
-            <Cart items={cart} />
+            <Cart items={cart} onDecreaseQuantity={decreaseQuantity} />
             <form className="add-product-form" onSubmit={handleSubmit}>
               <input
                 type="text"
@@ -225,7 +230,20 @@ function App() {
         }
       />
 
-      <Route path="/product/:id" element={<ProductDetail />} />
+      <Route
+        path="/product/:id"
+        element={
+          <>
+            <Cart items={cart} onDecreaseQuantity={decreaseQuantity} />
+            <ProductDetail
+              cart={cart}
+              onAddToCart={addToCart}
+              onRemoveFromCart={removeFromCart}
+              onDecreaseQuantity={decreaseQuantity}
+            />
+          </>
+        }
+      />
     </Routes>
   );
 }
