@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Routes, Route } from "react-router-dom";
 
-import type { Product } from "./types";
-import type { CartItem } from "./types";
+import type { Product, CartItem } from "./types";
 
 import ProductCard from "./components/ProductCard";
 import ProductDetail from "./components/ProductDetail";
@@ -63,14 +62,18 @@ function App() {
     setCart((prev) => prev.filter((i) => i.product.id !== productId));
   };
 
-  const decreaseQuantity = (productId: number): void => {
+  const updateQuantity = (productId: number, delta: number): void => {
     setCart((prev) =>
       prev
         .map((i) =>
-          i.product.id === productId ? { ...i, quantity: i.quantity - 1 } : i,
+          i.product.id === productId ? { ...i, quantity: i.quantity + delta } : i,
         )
         .filter((i) => i.quantity > 0),
     );
+  };
+
+  const decreaseQuantity = (productId: number): void => {
+    updateQuantity(productId, -1);
   };
 
   const handleUpdateStock = (
@@ -147,7 +150,12 @@ function App() {
         path="/"
         element={
           <>
-            <Cart items={cart} onDecreaseQuantity={decreaseQuantity} />
+            <Cart
+              items={cart}
+              onAddToCart={addToCart}
+              onDecreaseQuantity={decreaseQuantity}
+              onConfirm={() => navigate(`/checkout`)}
+            />
             <form className="add-product-form" onSubmit={handleSubmit}>
               <input
                 type="text"
@@ -234,7 +242,12 @@ function App() {
         path="/product/:id"
         element={
           <>
-            <Cart items={cart} onDecreaseQuantity={decreaseQuantity} />
+            <Cart
+              items={cart}
+              onAddToCart={addToCart}
+              onDecreaseQuantity={decreaseQuantity}
+              onConfirm={() => navigate("/checkout")}
+            />
             <ProductDetail
               cart={cart}
               onAddToCart={addToCart}

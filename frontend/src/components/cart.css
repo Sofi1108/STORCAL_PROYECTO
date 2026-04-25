@@ -85,13 +85,11 @@
 
 .cart-item {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  gap: 0.5rem;
+  grid-template-columns: 1fr auto auto auto auto;
+  gap: 0.75rem;
   padding: 0.75rem;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 0.85rem;
   align-items: center;
-  transition: background-color 0.2s;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .cart-item:hover {
@@ -102,6 +100,7 @@
   text-align: left;
   word-break: break-word;
   min-width: 0;
+  font-size: 0.85rem;
 }
 
 .item-qty {
@@ -109,44 +108,90 @@
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-weight: bold;
-}
-
-.item-btn {
-  padding: 0.4rem 0.65rem;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  color: #ea580c;
   font-size: 0.85rem;
-  cursor: pointer;
-  transition:
-    background-color 0.2s,
-    transform 0.1s;
-}
-
-.item-btn:hover {
-  background-color: #fee7d1;
-  transform: translateY(-1px);
 }
 
 .item-price {
   font-weight: bold;
   color: #222;
   white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.item-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.item-btn:hover {
+  background-color: #fee2e2;
+  transform: scale(1.1);
+}
+
+.btn-add {
+  color: #7c3aed;
+}
+
+.btn-add:hover {
+  background-color: #f3e8ff;
+}
+
+.btn-remove {
+  color: #ef4444;
+}
+
+.btn-remove:hover {
+  background-color: #fee2e2;
 }
 
 .cart-footer {
   border-top: 1px solid #e2e8f0;
-  padding: 1rem;
+  padding: 0.75rem;
 }
 
 .cart-total {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
 }
 
 .cart-total strong {
   color: #222;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
+}
+
+.checkout-btn {
+  width: 100%;
+  padding: 0.6rem;
+  background-color: #ea580c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.checkout-btn:hover {
+  background-color: #c2410c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+}
+
+.checkout-btn:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+  color: #6b7280;
 }

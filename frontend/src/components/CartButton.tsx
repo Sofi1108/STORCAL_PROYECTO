@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import type { Product, CartItem } from "../types";
-import "../cart-button.css";
+import "./cartButton.css";
 
 export interface CartButtonProps {
   product: Product;
@@ -33,7 +33,7 @@ export default function CartButton({
           e.stopPropagation();
           onAddToCart(product);
         }}
-        disabled={quantity >= product.stock}
+        disabled={quantity >= product.stock || product.stock === 0 || !product.active}
       >
         🛒
         {quantity > 0 && <span className="qty-badge">{quantity}</span>}

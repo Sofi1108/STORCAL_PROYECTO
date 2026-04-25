@@ -1,12 +1,14 @@
-import type { CartItem } from "../types";
-import "../cart.css";
+import type { CartItem, Product } from "../types";
+import "./cart.css";
 
 interface CartProps {
   items: CartItem[];
+  onAddToCart: (product: Product) => void;
   onDecreaseQuantity?: (productId: number) => void;
+  onConfirm: () => void;
 }
 
-export default function Cart({ items, onDecreaseQuantity }: CartProps) {
+export default function Cart({ items, onDecreaseQuantity, onAddToCart, onConfirm }: CartProps) {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
@@ -33,8 +35,20 @@ export default function Cart({ items, onDecreaseQuantity }: CartProps) {
                   <span className="item-price">
                     ${(item.product.price * item.quantity).toFixed(2)}
                   </span>
+
+                  <button 
+                    className="item-btn btn-add"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddToCart(item.product);
+                    }}
+                    disabled={item.quantity >= item.product.stock}
+                  >
+                    ➕
+                  </button>
+
                   <button
-                    className="item-btn decrease"
+                    className="item-btn btn-remove"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDecreaseQuantity?.(item.product.id);
@@ -42,6 +56,7 @@ export default function Cart({ items, onDecreaseQuantity }: CartProps) {
                   >
                     ❌
                   </button>
+
                 </div>
               ))}
             </div>
@@ -49,6 +64,14 @@ export default function Cart({ items, onDecreaseQuantity }: CartProps) {
               <div className="cart-total">
                 Total: <strong>${totalPrice.toFixed(2)}</strong>
               </div>
+                <button className="checkout-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onConfirm();
+                    }}
+                  >
+                    Pagar
+                  </button>
             </div>
           </>
         )}
