@@ -66,7 +66,9 @@ function App() {
     setCart((prev) =>
       prev
         .map((i) =>
-          i.product.id === productId ? { ...i, quantity: i.quantity + delta } : i,
+          i.product.id === productId
+            ? { ...i, quantity: i.quantity + delta }
+            : i,
         )
         .filter((i) => i.quantity > 0),
     );
@@ -120,7 +122,12 @@ function App() {
     e.preventDefault();
     fetch("http://localhost:3000/api/products", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+      },
+
       body: JSON.stringify({
         name: newName,
         price: parseFloat(newPrice),

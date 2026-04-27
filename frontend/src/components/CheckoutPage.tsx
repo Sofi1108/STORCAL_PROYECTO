@@ -12,6 +12,7 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<Order | null>(null);
+  const [orderItems, setOrderItems] = useState<CartItem[]>([]);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("cart");
@@ -20,8 +21,8 @@ export default function CheckoutPage() {
   }, []);
 
   const total = cart.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0
+    (sum, item) => sum + Number(item.product.price) * item.quantity,
+    0,
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,6 +50,7 @@ export default function CheckoutPage() {
       }
 
       setSuccess(data.order);
+      setOrderItems(cart);
       sessionStorage.removeItem("cart");
       setCart([]);
     } catch (err) {
@@ -61,8 +63,42 @@ export default function CheckoutPage() {
       <div className="checkout-container">
         <div className="success-message">
           <h2>¡Pedido creado exitosamente!</h2>
-          <p>Número de pedido: <strong>#{success.id}</strong></p>
-          <p>Total: <strong>${success.total}</strong></p>
+          <p>
+            Número de pedido: <strong>#{success.id}</strong>
+          </p>
+          <p>
+            Dirección: <strong>{success.address}</strong>
+          </p>
+
+          <div className="success-items">
+            <h3>Resumen de tu compra</h3>
+            <table className="order-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Cantidad</th>
+                  <th>Precio unitario</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orderItems.map((item) => (
+                  <tr key={item.product.id}>
+                    <td>{item.product.name}</td>
+                    <td>{item.quantity}</td>
+                    <td>${Number(item.product.price).toFixed(2)}</td>
+                    <td>
+                      ${(Number(item.product.price) * item.quantity).toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="order-total">
+              <strong>Total: ${success.total}</strong>
+            </div>
+          </div>
+
           <button onClick={() => navigate("/")}>Volver a la tienda</button>
         </div>
       </div>
@@ -83,7 +119,7 @@ export default function CheckoutPage() {
   return (
     <div className="checkout-container">
       <h2>Completar pedido</h2>
-      
+
       <div className="checkout-content">
         <div className="order-summary">
           <h3>Resumen del pedido</h3>
@@ -101,8 +137,10 @@ export default function CheckoutPage() {
                 <tr key={item.product.id}>
                   <td>{item.product.name}</td>
                   <td>{item.quantity}</td>
-                  <td>${item.product.price.toFixed(2)}</td>
-                  <td>${(item.product.price * item.quantity).toFixed(2)}</td>
+                  <td>${Number(item.product.price).toFixed(2)}</td>
+                  <td>
+                    ${(Number(item.product.price) * item.quantity).toFixed(2)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -127,17 +165,17 @@ export default function CheckoutPage() {
 
           {error && <div className="error-message">{error}</div>}
 
-          <div className="form-actions">
+          <div className="button-group">
             <button
               type="submit"
-              className="btn-primary"
+              className="primary-btn"
               disabled={!address.trim()}
             >
               Completar pedido
             </button>
             <button
               type="button"
-              className="btn-secondary"
+              className="secondary-btn"
               onClick={() => navigate("/")}
             >
               ← Volver al carrito

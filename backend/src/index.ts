@@ -1,14 +1,62 @@
 import express from "express";
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import type { Product } from "./types.ts";
 import { pool } from "./db.js";
 
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import type { JwtPayload } from "jsonwebtoken";
+
+import cookieParser from "cookie-parser";
+
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
 app.use(express.json());
+app.use(cookieParser());
+
+interface AuthRequest extends Request {
+  customer?: { id: number; username: string; role: string };
+}
+
+const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization || req.cookies.token;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Token no proporcionado" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "Token no proporcionado" });
+  }
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as {
+      id: number;
+      username: string;
+      role: string;
+    };
+    req.customer = {
+      id: payload.id,
+      username: payload.username,
+      role: payload.role,
+    };
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: "Token inválido" });
+  }
+};
+
+const JWT_SECRET = process.env.JWT_SECRET ?? "Puta_Vida_TT";
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
@@ -87,19 +135,20 @@ app.get(
       [orderId],
     );
 
-    res.json({ 
+    res.json({
       id: orderResult.rows[0].id,
       status: orderResult.rows[0].status,
       total: orderResult.rows[0].total,
       address: orderResult.rows[0].address,
       created_at: orderResult.rows[0].created_at,
-      items: itemsResult.rows 
+      items: itemsResult.rows,
     });
   },
 );
 
 app.post(
   "/api/products",
+  verifyToken,
   async (
     req: Request<
       {},
@@ -116,6 +165,11 @@ app.post(
     res: Response,
   ) => {
     const { name, description, price, category, stock, image_url } = req.body;
+
+    const user = (req as AuthRequest).customer!;
+    if (user.role !== "admin" && user.role !== "employee") {
+      return res.status(403).json({ error: "Acceso denegado" });
+    }
 
     if (!name) {
       return res.status(400).json({ error: "El nombre es obligatorio" });
@@ -171,7 +225,6 @@ app.post(
         .json({ error: "El pedido debe contener al menos un producto" });
     }
 
-    // Validate each item and check stock
     for (const item of items) {
       if (!item.productId || item.unitPrice <= 0 || item.quantity <= 0) {
         return res.status(400).json({
@@ -198,28 +251,19 @@ app.post(
       }
     }
 
-    // Calculate total
-    const total = items.reduce(
-      (sum, item) => sum + item.quantity * item.unitPrice,
-      0,
-    );
-
-    // Start transaction
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
 
-      // Create order
       const orderResult = await client.query(
-        `INSERT INTO orders (customer_id, address, status, total)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, status, total, address, created_at`,
-        [1, address, "pending", total],
+        `INSERT INTO orders (customer_id, address, status)
+         VALUES ($1, $2, $3)
+         RETURNING id, status, address, created_at`,
+        [1, address, "pending"],
       );
 
       const orderId = orderResult.rows[0].id;
 
-      // Insert order items and update stock
       for (const item of items) {
         await client.query(
           `INSERT INTO order_items (order_id, product_id, quantity, unit_price)
@@ -234,31 +278,51 @@ app.post(
       }
 
       await client.query("COMMIT");
+
+      // Calcular el total desde order_items
+      const totalResult = await pool.query(
+        `SELECT COALESCE(SUM(unit_price * quantity), 0) as total
+         FROM order_items
+         WHERE order_id = $1`,
+        [orderId],
+      );
+
       return res.status(201).json({
         message: "Pedido creado",
-        order: orderResult.rows[0],
+        order: {
+          id: orderResult.rows[0].id,
+          status: orderResult.rows[0].status,
+          total: totalResult.rows[0].total,
+          address: orderResult.rows[0].address,
+          created_at: orderResult.rows[0].created_at,
+        },
       });
     } catch (error) {
       await client.query("ROLLBACK");
       console.error("Error processing order:", error);
-      return res.status(500).json({ error: "Error al procesar la orden" });
+      const errorMessage =
+        error instanceof Error ? error.message : "Error desconocido";
+      return res
+        .status(500)
+        .json({ error: `Error al procesar la orden: ${errorMessage}` });
     } finally {
       client.release();
     }
   },
 );
 
-// Actualizar stock
+// Actualizar producto
 app.put(
   "/api/products/:id",
+  verifyToken,
   async (
     req: Request<
       { id: string },
       {},
       {
-        name: string;
+        name?: string;
         description?: string;
-        price: number;
+        price?: number;
         category?: string;
         stock?: number;
         image_url?: string;
@@ -269,33 +333,60 @@ app.put(
     const { id } = req.params;
     const { name, description, price, category, stock, image_url } = req.body;
 
-    const result = await pool.query(
+    const user = (req as AuthRequest).customer!;
+    if (user.role !== "admin" && user.role !== "employee") {
+      return res.status(403).json({ error: "Acceso denegado" });
+    }
+
+    // Primero obtener el producto actual
+    const currentResult = await pool.query(
+      "SELECT * FROM products WHERE id = $1",
+      [parseInt(id)],
+    );
+
+    if (currentResult.rows.length === 0) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+
+    const current = currentResult.rows[0];
+
+    // Usar valores del body o mantener los actuales
+    const updateResult = await pool.query(
       "UPDATE products" +
         " SET name=$1, description=$2, price=$3, category=$4, stock=$5, image_url=$6" +
         " WHERE id=$7 RETURNING *",
       [
-        name,
-        description ?? "",
-        price,
-        category ?? "General",
-        stock ?? 0,
-        image_url ?? "",
+        name ?? current.name,
+        description ?? current.description,
+        price ?? current.price,
+        category ?? current.category,
+        stock !== undefined ? stock : current.stock,
+        image_url ?? current.image_url,
         parseInt(id),
       ],
     );
 
-    if (result.rows.length === 0) {
+    if (updateResult.rows.length === 0) {
       return res.status(404).json({ error: "Producto no encontrado" });
     }
-    res.json({ message: "Producto actualizado", product: result.rows[0] });
+    res.json({
+      message: "Producto actualizado",
+      product: updateResult.rows[0],
+    });
   },
 );
 
 // Parte 2 — Soft delete
 app.delete(
   "/api/products/:id",
+  verifyToken,
   async (req: Request<{ id: string }>, res: Response) => {
     const id = parseInt(req.params.id);
+
+    const user = (req as AuthRequest).customer!;
+    if (user.role !== "admin" && user.role !== "employee") {
+      return res.status(403).json({ error: "Acceso denegado" });
+    }
 
     // Comprobar si el producto está en algún pedido
     const inOrders = await pool.query(
@@ -331,7 +422,13 @@ app.delete(
 // Parte 3 — Toggle activar/desactivar
 app.patch(
   "/api/products/:id/toggle",
+  verifyToken,
   async (req: Request<{ id: string }>, res: Response) => {
+    const user = (req as AuthRequest).customer!;
+    if (user.role !== "admin" && user.role !== "employee") {
+      return res.status(403).json({ error: "Acceso denegado" });
+    }
+
     const result = await pool.query(
       "UPDATE products SET active = NOT active WHERE id = $1 AND deleted_at IS NULL RETURNING *",
       [parseInt(req.params.id)],
@@ -367,34 +464,27 @@ app.get(
 );
 
 // GET /api/clock/status - Check if employee is clocked in
-app.get(
-  "/api/clock/status",
-  async (req: Request, res: Response) => {
-    const employeeId = parseInt(req.query.employeeId as string) || 1;
-    const result = await pool.query(
-      `SELECT COUNT(*) as count FROM clock_events 
+app.get("/api/clock/status", async (req: Request, res: Response) => {
+  const employeeId = parseInt(req.query.employeeId as string) || 1;
+  const result = await pool.query(
+    `SELECT COUNT(*) as count FROM clock_events 
        WHERE employee_id = $1 AND type = 'in' 
        AND NOT EXISTS (
          SELECT 1 FROM clock_events ce2 
          WHERE ce2.employee_id = $1 AND ce2.type = 'out' 
          AND ce2.recorded_at > clock_events.recorded_at
        )`,
-      [employeeId],
-    );
-    const isClockedIn = parseInt(result.rows[0].count) > 0;
-    res.json({ isClockedIn });
-  },
-);
+    [employeeId],
+  );
+  const isClockedIn = parseInt(result.rows[0].count) > 0;
+  res.json({ isClockedIn });
+});
 
 // POST /api/clock - Clock in/out
 app.post(
   "/api/clock",
   async (
-    req: Request<
-      {},
-      {},
-      { employeeId: number; type: string; note?: string }
-    >,
+    req: Request<{}, {}, { employeeId: number; type: string; note?: string }>,
     res: Response,
   ) => {
     const { employeeId, type, note } = req.body;
@@ -415,38 +505,29 @@ app.post(
 );
 
 // GET /api/clock/history - Get clock events grouped by day
-app.get(
-  "/api/clock/history",
-  async (req: Request, res: Response) => {
-    const employeeId = parseInt(req.query.employeeId as string) || 1;
-    const result = await pool.query(
-      `SELECT * FROM clock_events 
+app.get("/api/clock/history", async (req: Request, res: Response) => {
+  const employeeId = parseInt(req.query.employeeId as string) || 1;
+  const result = await pool.query(
+    `SELECT * FROM clock_events 
        WHERE employee_id = $1
        ORDER BY recorded_at DESC`,
-      [employeeId],
-    );
-    res.json(result.rows);
-  },
-);
+    [employeeId],
+  );
+  res.json(result.rows);
+});
 
 // GET /api/admin/users - List all users
-app.get(
-  "/api/admin/users",
-  async (req: Request, res: Response) => {
-    const result = await pool.query(
-      `SELECT id, username, email, role, active FROM customers ORDER BY id`,
-    );
-    res.json(result.rows);
-  },
-);
+app.get("/api/admin/users", async (req: Request, res: Response) => {
+  const result = await pool.query(
+    `SELECT id, username, email, role, active FROM customers ORDER BY id`,
+  );
+  res.json(result.rows);
+});
 
 // PATCH /api/admin/users/:id/role - Change user role
 app.patch(
   "/api/admin/users/:id/role",
-  async (
-    req: Request<{ id: string }, {}, { role: string }>,
-    res: Response,
-  ) => {
+  async (req: Request<{ id: string }, {}, { role: string }>, res: Response) => {
     const userId = parseInt(req.params.id);
     const { role } = req.body;
 
@@ -490,58 +571,93 @@ app.patch(
   },
 );
 
-// POST /api/auth/register - Register new user
 app.post(
   "/api/auth/register",
   async (
-    req: Request<
-      {},
-      {},
-      { username: string; email: string; password: string }
-    >,
+    req: Request<{}, {}, { username: string; email: string; password: string }>,
     res: Response,
   ) => {
     const { username, email, password } = req.body;
 
     if (!username || !email || !password) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ error: "Faltan campos requeridos" });
     }
 
-    try {
-      const result = await pool.query(
-        `INSERT INTO customers (username, email, password, role, active)
-         VALUES ($1, $2, $3, 'customer', true)
-         RETURNING id, username, email`,
-        [username, email, password],
-      );
+    const existing = await pool.query(
+      "SELECT id FROM customers WHERE email = $1 OR username = $2",
+      [email, username],
+    );
 
-      res.status(201).json({ message: "Usuario creado" });
-    } catch (err) {
-      res.status(400).json({ error: "Email already exists or invalid data" });
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: "Email o username ya existe" });
     }
+
+    const password_hash = await bcrypt.hash(password, 10);
+
+    const result = await pool.query(
+      `INSERT INTO customers (username, email, password)
+       VALUES ($1, $2, $3)
+       RETURNING id, username, email`,
+      [username, email, password_hash],
+    );
+    res.status(201).json({ message: "Usuario creado", user: result.rows[0] });
   },
 );
 
-// POST /api/auth/login - Login user
 app.post(
   "/api/auth/login",
   async (
-    req: Request<{}, {}, { email: string; password: string }>,
+    req: Request<{}, {}, { username: string; password: string }>,
     res: Response,
   ) => {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
-    const result = await pool.query(
-      `SELECT id, username, email, role FROM customers 
-       WHERE email = $1 AND password = $2 AND active = true`,
-      [email, password],
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: "Invalid credentials" });
+    if (!username || !password) {
+      return res.status(400).json({ error: "Faltan campos requeridos" });
     }
 
-    res.json({ user: result.rows[0] });
+    const userResult = await pool.query(
+      "SELECT * FROM customers WHERE username = $1",
+      [username],
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(400).json({ error: "Creendiales inválidas" });
+    }
+
+    const user = userResult.rows[0];
+    const validPassword = await bcrypt.compare(password, user.password_hash);
+
+    if (!validPassword) {
+      return res.status(400).json({ error: "Creendiales inválidas" });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "2h" },
+    );
+    res.json({
+      message: "Login exitoso",
+      token,
+      customer: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 2 * 60 * 60 * 1000, // 2 horas -- Se ponen en milisegundos
+    });
+
+    res.json({
+      message: "Login exitoso",
+      token,
+    });
   },
 );
-

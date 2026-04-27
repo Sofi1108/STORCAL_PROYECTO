@@ -13,7 +13,6 @@ function Header() {
       <h1>CustomShop</h1>
       <p>Tienda de productos personalizados</p>
       {user && <p>Bienvenida, {user.username}</p>}
-      {cartCount > 0 && <p>Carrito: {cartCount} items</p>}
     </header>
   );
 }

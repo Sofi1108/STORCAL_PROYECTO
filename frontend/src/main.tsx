@@ -18,7 +18,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <Header />
       <Routes>
-        <Route path="/*" element={<App />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -28,7 +27,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="fichajes" element={<ClockInPage />} />
           <Route path="historico" element={<ClockHistory />} />
         </Route>
+        <Route path="/*" element={<App />} />
       </Routes>
     </BrowserRouter>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
