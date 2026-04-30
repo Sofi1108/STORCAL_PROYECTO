@@ -1,19 +1,12 @@
 import { useEffect, useState } from "react";
 import "./admin-users.css";
-
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  role: string;
-  active: boolean;
-}
+import type { Customer } from "../types";
 
 export default function AdminUsers() {
   const PORT = 3000;
   const ROUTE = `http://localhost:${PORT}/`;
 
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

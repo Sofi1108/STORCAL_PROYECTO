@@ -56,6 +56,23 @@ const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
   }
 };
 
+const requireRole = (roles: string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (req.customer === null || req.customer === undefined) {
+      return res.status(401).json({ error: "No hay customer" });
+    }
+
+    roles.forEach((rol) => {
+      if (req.customer !== undefined) {
+        if (rol != req.customer.role) {
+          return res.status(403).json({ error: "El rol no esta en la lista" });
+        }
+      }
+    });
+    next();
+  };
+};
+
 const JWT_SECRET = process.env.JWT_SECRET ?? "Puta_Vida_TT";
 
 app.listen(PORT, () => {
@@ -149,6 +166,7 @@ app.get(
 app.post(
   "/api/products",
   verifyToken,
+  requireRole,
   async (
     req: Request<
       {},
@@ -315,6 +333,7 @@ app.post(
 app.put(
   "/api/products/:id",
   verifyToken,
+  requireRole,
   async (
     req: Request<
       { id: string },
@@ -380,6 +399,7 @@ app.put(
 app.delete(
   "/api/products/:id",
   verifyToken,
+  requireRole,
   async (req: Request<{ id: string }>, res: Response) => {
     const id = parseInt(req.params.id);
 
@@ -423,6 +443,7 @@ app.delete(
 app.patch(
   "/api/products/:id/toggle",
   verifyToken,
+  requireRole,
   async (req: Request<{ id: string }>, res: Response) => {
     const user = (req as AuthRequest).customer!;
     if (user.role !== "admin" && user.role !== "employee") {
@@ -659,5 +680,23 @@ app.post(
       message: "Login exitoso",
       token,
     });
+  },
+);
+
+app.get(
+  "/api/fichajes",
+  verifyToken,
+  requireRole(["employee", "admin"]),
+  (req: AuthRequest, res: Response) => {
+    res.json({ message: "Bienvenido, " + req.customer!.username });
+  },
+);
+// Solo admin
+app.delete(
+  "/api/admin/users/:id",
+  verifyToken,
+  requireRole(["admin"]),
+  (req: AuthRequest, res: Response) => {
+    // ...
   },
 );

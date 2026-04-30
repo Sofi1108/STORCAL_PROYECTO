@@ -14,9 +14,17 @@ export interface CartItem {
 }
 
 export interface Order {
-id: number;
-status: string;
-total: string; // calculado por el backend con SUM(order_items)
-address: string;
-created_at: string;
+  id: number;
+  status: string;
+  total: string; // calculado por el backend con SUM(order_items)
+  address: string;
+  created_at: string;
+}
+
+export interface Customer {
+  id: number;
+  username: string;
+  email: string;
+  role: "admin" | "employee" | "customer";
+  active: boolean;
 }
