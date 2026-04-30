@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from "react-router-dom";
-import "./checkout.css";
+import "./intranet.css";
 
 export default function IntranetLayout() {
   const raw = sessionStorage.getItem("user");
@@ -16,12 +16,8 @@ export default function IntranetLayout() {
         <NavLink to="/intranet" end>
           Bienvenida
         </NavLink>
-        <NavLink to="/intranet/fichajes">
-          Fichajes
-        </NavLink>
-        <NavLink to="/intranet/historico">
-          Histórico
-        </NavLink>
+        <NavLink to="/intranet/fichajes">Fichajes</NavLink>
+        <NavLink to="/intranet/historico">Histórico</NavLink>
       </nav>
 
       <div className="intranet-content">

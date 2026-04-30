@@ -53,12 +53,12 @@ export default function ClockHistory() {
           {Object.entries(grouped).map(([day, group]) => (
             <tr
               key={day}
-              style={{
-                backgroundColor: isComplete(group) ? "#c8e6c9" : "#ffcdd2",
-              }}
+              className={isComplete(group) ? "complete" : "incomplete"}
             >
               <td>{day}</td>
-              <td>{group.in ? new Date(group.in).toLocaleTimeString() : "—"}</td>
+              <td>
+                {group.in ? new Date(group.in).toLocaleTimeString() : "—"}
+              </td>
               <td>
                 {group.out ? new Date(group.out).toLocaleTimeString() : "—"}
               </td>

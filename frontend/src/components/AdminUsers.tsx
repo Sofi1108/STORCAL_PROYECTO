@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "./admin-users.css";
 
 interface User {
   id: number;
@@ -35,7 +36,7 @@ export default function AdminUsers() {
 
       if (res.ok) {
         setUsers(
-          users.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+          users.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
         );
       }
     } catch (err) {
@@ -53,7 +54,7 @@ export default function AdminUsers() {
 
       if (res.ok) {
         setUsers(
-          users.map((u) => (u.id === userId ? { ...u, active: newStatus } : u))
+          users.map((u) => (u.id === userId ? { ...u, active: newStatus } : u)),
         );
       }
     } catch (err) {
@@ -61,52 +62,52 @@ export default function AdminUsers() {
     }
   };
 
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <div className="loading">Cargando usuarios...</div>;
 
   return (
-    <div className="admin-users">
-      <h2>Gestión de usuarios</h2>
-      <table className="users-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Rol</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.id}>
-              <td>{user.id}</td>
-              <td>{user.username}</td>
-              <td>{user.email}</td>
-              <td>
-                <select
-                  value={user.role}
-                  onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                >
-                  <option>customer</option>
-                  <option>employee</option>
-                  <option>admin</option>
-                </select>
-              </td>
-              <td>{user.active ? "Activo" : "Suspendido"}</td>
-              <td>
-                <button
-                  onClick={() =>
-                    handleStatusChange(user.id, !user.active)
-                  }
-                >
-                  {user.active ? "Suspender" : "Reactivar"}
-                </button>
-              </td>
+    <div className="admin-users-container">
+      <h2>Gestión de Usuarios</h2>
+      <div className="users-table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Acciones</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <tr key={user.id}>
+                <td>{user.id}</td>
+                <td>{user.username}</td>
+                <td>{user.email}</td>
+                <td>
+                  <select
+                    value={user.role}
+                    onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                  >
+                    <option>customer</option>
+                    <option>employee</option>
+                    <option>admin</option>
+                  </select>
+                </td>
+                <td>{user.active ? "Activo" : "Suspendido"}</td>
+                <td>
+                  <button
+                    onClick={() => handleStatusChange(user.id, !user.active)}
+                  >
+                    {user.active ? "Suspender" : "Reactivar"}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

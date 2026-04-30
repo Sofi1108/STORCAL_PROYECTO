@@ -1,0 +1,392 @@
+/* Intranet Layout */
+.intranet-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 200px);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+}
+
+.intranet-header {
+  background: #667eea;
+  color: white;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.intranet-header h2 {
+  margin: 0;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.intranet-header p {
+  margin: 0;
+  font-size: 1.1rem;
+  opacity: 0.95;
+}
+
+/* Intranet Navigation */
+.intranet-nav {
+  display: flex;
+  gap: 0;
+  background-color: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0;
+  margin: 0;
+  flex-wrap: wrap;
+}
+
+.intranet-nav a {
+  padding: 1rem 1.5rem;
+  text-decoration: none;
+  color: #374151;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.intranet-nav a:hover {
+  background-color: #e5e7eb;
+  color: #667eea;
+}
+
+.intranet-nav a.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+  background-color: #f9fafb;
+}
+
+/* Intranet Content */
+.intranet-content {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Intranet Home */
+.intranet-home {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.intranet-home h2 {
+  font-size: 1.8rem;
+  color: #222;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.intranet-home p {
+  font-size: 1.1rem;
+  color: #6b7280;
+  margin-bottom: 2rem;
+}
+
+.intranet-home button {
+  padding: 0.75rem 2rem;
+  background-color: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.intranet-home button:hover {
+  background-color: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Clock In Page */
+.clock-in-page {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.clock-in-page h2 {
+  font-size: 1.6rem;
+  color: #222;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.clock-status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background-color: #f3f4f6;
+  border-radius: 6px;
+  margin-bottom: 2rem;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.status-badge.clocked-in {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.clocked-out {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.clock-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.clock-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.clock-button.clock-in {
+  background-color: #10b981;
+  color: white;
+}
+
+.clock-button.clock-in:hover:not(:disabled) {
+  background-color: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.clock-button.clock-out {
+  background-color: #ef4444;
+  color: white;
+}
+
+.clock-button.clock-out:hover:not(:disabled) {
+  background-color: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.clock-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.note-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.note-section label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.note-section textarea {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.note-section textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.message {
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.message.success {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.message.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.message.loading {
+  background-color: #dbeafe;
+  color: #0c4a6e;
+  border: 1px solid #bae6fd;
+}
+
+/* Clock History */
+.clock-history {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.clock-history h2 {
+  font-size: 1.6rem;
+  color: #222;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.history-table th {
+  background-color: #f3f4f6;
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 2px solid #d1d5db;
+  font-weight: 600;
+  color: #374151;
+}
+
+.history-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #222;
+}
+
+.history-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.history-table .complete {
+  background-color: #f0fdf4;
+}
+
+.history-table .incomplete {
+  background-color: #fef2f2;
+}
+
+.no-history {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .intranet-content {
+    padding: 1rem;
+  }
+
+  .intranet-home,
+  .clock-in-page,
+  .clock-history {
+    padding: 1.5rem;
+  }
+
+  .intranet-header {
+    padding: 1.5rem 1rem;
+  }
+
+  .intranet-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .intranet-header p {
+    font-size: 1rem;
+  }
+
+  .intranet-nav {
+    flex-wrap: wrap;
+  }
+
+  .intranet-nav a {
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .clock-controls {
+    flex-direction: column;
+  }
+
+  .clock-button {
+    width: 100%;
+  }
+
+  .history-table {
+    font-size: 0.9rem;
+  }
+
+  .history-table th,
+  .history-table td {
+    padding: 0.75rem;
+  }
+
+  .users-table {
+    font-size: 0.9rem;
+  }
+
+  .users-table th,
+  .users-table td {
+    padding: 0.75rem;
+  }
+
+  .users-table select,
+  .users-table button {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .intranet-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .intranet-home h2,
+  .clock-in-page h2,
+  .clock-history h2,
+  .admin-users h2 {
+    font-size: 1.4rem;
+  }
+
+  .intranet-nav a {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}

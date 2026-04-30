@@ -50,7 +50,7 @@ export default function ClockInPage() {
       setNote("");
       const timestamp = new Date(data.event.recorded_at).toLocaleTimeString();
       setMessage(
-        `${isClockedIn ? "Salida" : "Entrada"} registrada a las ${timestamp}`
+        `${isClockedIn ? "Salida" : "Entrada"} registrada a las ${timestamp}`,
       );
     } catch (err) {
       setMessage("Error al conectar con el servidor");
@@ -60,19 +60,39 @@ export default function ClockInPage() {
   if (loading) return <div>Cargando...</div>;
 
   return (
-    <div className="clock-page">
+    <div className="clock-in-page">
       <h2>Fichajes</h2>
-      <div className="clock-form">
+      <div className="clock-status">
+        <span
+          className={`status-badge ${isClockedIn ? "clocked-in" : "clocked-out"}`}
+        >
+          {isClockedIn ? "Fichado dentro" : "Fichado fuera"}
+        </span>
+      </div>
+      <div className="note-section">
+        <label htmlFor="note">Nota (opcional)</label>
         <textarea
+          id="note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Incidencia opcional"
         />
-        <button onClick={handleClock}>
+      </div>
+      <div className="clock-controls">
+        <button
+          className={`clock-button ${isClockedIn ? "clock-out" : "clock-in"}`}
+          onClick={handleClock}
+        >
           {isClockedIn ? "Fichar salida" : "Fichar entrada"}
         </button>
-        {message && <p className="message">{message}</p>}
       </div>
+      {message && (
+        <p
+          className={`message ${message.startsWith("Error") ? "error" : "success"}`}
+        >
+          {message}
+        </p>
+      )}
     </div>
   );
 }

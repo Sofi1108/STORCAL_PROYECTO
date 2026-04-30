@@ -1,0 +1,196 @@
+.admin-users-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+  border-radius: 8px;
+}
+
+.admin-users-container h2 {
+  color: #2c3e50;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.users-table-wrapper {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+th {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+tbody tr {
+  border-bottom: 1px solid #e8ecf1;
+  transition: all 0.3s ease;
+}
+
+tbody tr:hover {
+  background-color: #f0f4f8;
+  transform: scale(1.01);
+  box-shadow: inset 0 0 10px rgba(102, 126, 234, 0.1);
+}
+
+tbody tr:last-child {
+  border-bottom: none;
+}
+
+td {
+  padding: 1rem 1.5rem;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+/* ID column */
+td:first-child {
+  font-weight: 600;
+  color: #667eea;
+}
+
+/* Select dropdown styling */
+select {
+  padding: 0.6rem 0.8rem;
+  border: 2px solid #e8ecf1;
+  border-radius: 6px;
+  background-color: white;
+  color: #2c3e50;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+select:hover {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+}
+
+/* Action buttons */
+button {
+  padding: 0.7rem 1.2rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Status-based button colors */
+tbody tr:has(td:nth-child(5):contains("Activo")) button {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+tbody tr:has(td:nth-child(5):contains("Suspendido")) button {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+/* Fallback for button styling */
+td button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+td button:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #6b3d91 100%);
+}
+
+/* Loading state */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 1.5rem;
+  color: #667eea;
+  font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .admin-users-container {
+    padding: 1rem;
+  }
+
+  .admin-users-container h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  th,
+  td {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  th {
+    font-size: 0.8rem;
+  }
+
+  select,
+  button {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-users-container {
+    padding: 0.5rem;
+  }
+
+  th,
+  td {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  select,
+  button {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.7rem;
+  }
+}
