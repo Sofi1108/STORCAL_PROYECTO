@@ -23,17 +23,22 @@ app.use(express.json());
 app.use(cookieParser());
 
 interface AuthRequest extends Request {
-  customer?: { id: number; username: string; role: string };
+  customer?: { id: number; email: string; role: string };
 }
 
 const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization || req.cookies.token;
+  let token: string | undefined;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Token no proporcionado" });
+  // Intentar obtener el token del Authorization header
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1];
   }
 
-  const token = authHeader.split(" ")[1];
+  // Si no está en el header, intentar de la cookie
+  if (!token) {
+    token = req.cookies.token;
+  }
 
   if (!token) {
     return res.status(401).json({ error: "Token no proporcionado" });
@@ -42,12 +47,12 @@ const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const payload = jwt.verify(token, JWT_SECRET) as {
       id: number;
-      username: string;
+      email: string;
       role: string;
     };
     req.customer = {
       id: payload.id,
-      username: payload.username,
+      email: payload.email,
       role: payload.role,
     };
     next();
@@ -62,13 +67,9 @@ const requireRole = (roles: string[]) => {
       return res.status(401).json({ error: "No hay customer" });
     }
 
-    roles.forEach((rol) => {
-      if (req.customer !== undefined) {
-        if (rol != req.customer.role) {
-          return res.status(403).json({ error: "El rol no esta en la lista" });
-        }
-      }
-    });
+    if (!roles.includes(req.customer.role)) {
+      return res.status(403).json({ error: "El rol no está en la lista" });
+    }
     next();
   };
 };
@@ -119,14 +120,39 @@ app.get("/api/test", async (req: Request, res: Response) => {
   res.json({ connected: true, time: result.rows[0].now });
 });
 
-app.get("/api/orders", async (req: Request, res: Response) => {
-  const result = await pool.query(
-    `SELECT o.id, o.created_at, oi.product_id, oi.quantity, p.name AS product_name
+app.get(
+  "/api/orders",
+  verifyToken,
+  requireRole(["admin", "employee"]),
+  async (req: Request, res: Response) => {
+    const result = await pool.query(
+      `SELECT o.id, o.created_at, oi.product_id, oi.quantity, p.name AS product_name
          FROM orders o
          JOIN order_items oi ON o.id = oi.order_id`,
-  );
-  res.json(result.rows);
-});
+    );
+    res.json(result.rows);
+  },
+);
+
+app.get(
+  "/api/orders/my",
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    const customerId = req.customer!.id;
+    const result = await pool.query(
+      `SELECT o.id, o.status, 
+        COALESCE(SUM(oi.unit_price * oi.quantity), 0)::text as total,
+        o.address, o.created_at
+       FROM orders o
+       LEFT JOIN order_items oi ON o.id = oi.order_id
+       WHERE o.customer_id = $1
+       GROUP BY o.id
+       ORDER BY o.created_at DESC`,
+      [customerId],
+    );
+    res.json(result.rows);
+  },
+);
 
 app.get(
   "/api/orders/:id",
@@ -163,10 +189,46 @@ app.get(
   },
 );
 
+// PATCH /api/orders/:id/status - Change order status
+app.patch(
+  "/api/orders/:id/status",
+  verifyToken,
+  requireRole(["admin", "employee"]),
+  async (
+    req: Request<{ id: string }, {}, { status: string }>,
+    res: Response,
+  ) => {
+    const orderId = parseInt(req.params.id);
+    const { status } = req.body;
+
+    const validStatuses = [
+      "pending",
+      "processing",
+      "shipped",
+      "delivered",
+      "cancelled",
+    ];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+
+    const result = await pool.query(
+      `UPDATE orders SET status = $1 WHERE id = $2 RETURNING *`,
+      [status, orderId],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    res.json({ message: "Status updated", order: result.rows[0] });
+  },
+);
+
 app.post(
   "/api/products",
   verifyToken,
-  requireRole,
+  requireRole(["admin", "employee"]),
   async (
     req: Request<
       {},
@@ -183,11 +245,6 @@ app.post(
     res: Response,
   ) => {
     const { name, description, price, category, stock, image_url } = req.body;
-
-    const user = (req as AuthRequest).customer!;
-    if (user.role !== "admin" && user.role !== "employee") {
-      return res.status(403).json({ error: "Acceso denegado" });
-    }
 
     if (!name) {
       return res.status(400).json({ error: "El nombre es obligatorio" });
@@ -224,6 +281,7 @@ app.post(
 
 app.post(
   "/api/orders",
+  verifyToken,
   async (
     req: Request<
       {},
@@ -236,6 +294,7 @@ app.post(
     res: Response,
   ) => {
     const { items, address } = req.body;
+    const user = (req as AuthRequest).customer!;
 
     if (!items || items.length === 0) {
       return res
@@ -277,7 +336,7 @@ app.post(
         `INSERT INTO orders (customer_id, address, status)
          VALUES ($1, $2, $3)
          RETURNING id, status, address, created_at`,
-        [1, address, "pending"],
+        [user.id, address, "pending"],
       );
 
       const orderId = orderResult.rows[0].id;
@@ -333,7 +392,7 @@ app.post(
 app.put(
   "/api/products/:id",
   verifyToken,
-  requireRole,
+  requireRole(["admin", "employee"]),
   async (
     req: Request<
       { id: string },
@@ -351,11 +410,6 @@ app.put(
   ) => {
     const { id } = req.params;
     const { name, description, price, category, stock, image_url } = req.body;
-
-    const user = (req as AuthRequest).customer!;
-    if (user.role !== "admin" && user.role !== "employee") {
-      return res.status(403).json({ error: "Acceso denegado" });
-    }
 
     // Primero obtener el producto actual
     const currentResult = await pool.query(
@@ -399,14 +453,9 @@ app.put(
 app.delete(
   "/api/products/:id",
   verifyToken,
-  requireRole,
+  requireRole(["admin"]),
   async (req: Request<{ id: string }>, res: Response) => {
     const id = parseInt(req.params.id);
-
-    const user = (req as AuthRequest).customer!;
-    if (user.role !== "admin" && user.role !== "employee") {
-      return res.status(403).json({ error: "Acceso denegado" });
-    }
 
     // Comprobar si el producto está en algún pedido
     const inOrders = await pool.query(
@@ -443,13 +492,8 @@ app.delete(
 app.patch(
   "/api/products/:id/toggle",
   verifyToken,
-  requireRole,
+  requireRole(["admin", "employee"]),
   async (req: Request<{ id: string }>, res: Response) => {
-    const user = (req as AuthRequest).customer!;
-    if (user.role !== "admin" && user.role !== "employee") {
-      return res.status(403).json({ error: "Acceso denegado" });
-    }
-
     const result = await pool.query(
       "UPDATE products SET active = NOT active WHERE id = $1 AND deleted_at IS NULL RETURNING *",
       [parseInt(req.params.id)],
@@ -464,51 +508,39 @@ app.patch(
   },
 );
 
-// GET /api/orders/customer/:customerId
+// GET /api/clock/status
 app.get(
-  "/api/orders/customer/:customerId",
-  async (req: Request<{ customerId: string }>, res: Response) => {
-    const customerId = parseInt(req.params.customerId);
-    const result = await pool.query(
-      `SELECT o.id, o.status, 
-        COALESCE(SUM(oi.unit_price * oi.quantity), 0)::text as total,
-        o.address, o.created_at
-       FROM orders o
-       LEFT JOIN order_items oi ON o.id = oi.order_id
-       WHERE o.customer_id = $1
-       GROUP BY o.id
-       ORDER BY o.created_at DESC`,
-      [customerId],
-    );
-    res.json(result.rows);
-  },
-);
+  "/api/clock/status",
+  verifyToken,
+  requireRole(["employee", "admin"]),
+  async (req: AuthRequest, res: Response) => {
+    const employeeId = req.customer!.id;
 
-// GET /api/clock/status - Check if employee is clocked in
-app.get("/api/clock/status", async (req: Request, res: Response) => {
-  const employeeId = parseInt(req.query.employeeId as string) || 1;
-  const result = await pool.query(
-    `SELECT COUNT(*) as count FROM clock_events 
+    const result = await pool.query(
+      `SELECT COUNT(*) as count FROM clock_events 
        WHERE employee_id = $1 AND type = 'in' 
        AND NOT EXISTS (
          SELECT 1 FROM clock_events ce2 
          WHERE ce2.employee_id = $1 AND ce2.type = 'out' 
          AND ce2.recorded_at > clock_events.recorded_at
        )`,
-    [employeeId],
-  );
-  const isClockedIn = parseInt(result.rows[0].count) > 0;
-  res.json({ isClockedIn });
-});
+      [employeeId],
+    );
+
+    const isClockedIn = parseInt(result.rows[0].count) > 0;
+    res.json({ isClockedIn });
+  },
+);
 
 // POST /api/clock - Clock in/out
 app.post(
   "/api/clock",
-  async (
-    req: Request<{}, {}, { employeeId: number; type: string; note?: string }>,
-    res: Response,
-  ) => {
-    const { employeeId, type, note } = req.body;
+  verifyToken,
+  requireRole(["employee", "admin"]),
+  async (req: AuthRequest, res: Response) => {
+    // Extraemos employeeId del token y el type/note del body
+    const employeeId = req.customer!.id;
+    const { type, note } = req.body;
 
     if (!["in", "out"].includes(type)) {
       return res.status(400).json({ error: "Type must be 'in' or 'out'" });
@@ -526,28 +558,42 @@ app.post(
 );
 
 // GET /api/clock/history - Get clock events grouped by day
-app.get("/api/clock/history", async (req: Request, res: Response) => {
-  const employeeId = parseInt(req.query.employeeId as string) || 1;
-  const result = await pool.query(
-    `SELECT * FROM clock_events 
-       WHERE employee_id = $1
-       ORDER BY recorded_at DESC`,
-    [employeeId],
-  );
-  res.json(result.rows);
-});
+app.get(
+  "/api/clock/history",
+  verifyToken,
+  requireRole(["employee", "admin"]),
+  async (req: AuthRequest, res: Response) => {
+    const employeeId = req.customer!.id;
+
+    const result = await pool.query(
+      `SELECT * FROM clock_events 
+     WHERE employee_id = $1
+     ORDER BY recorded_at DESC`,
+      [employeeId],
+    );
+
+    res.json(result.rows);
+  },
+);
 
 // GET /api/admin/users - List all users
-app.get("/api/admin/users", async (req: Request, res: Response) => {
-  const result = await pool.query(
-    `SELECT id, username, email, role, active FROM customers ORDER BY id`,
-  );
-  res.json(result.rows);
-});
+app.get(
+  "/api/admin/users",
+  verifyToken,
+  requireRole(["admin"]),
+  async (req: Request, res: Response) => {
+    const result = await pool.query(
+      `SELECT id, email, email, role, active FROM customers ORDER BY id`,
+    );
+    res.json(result.rows);
+  },
+);
 
 // PATCH /api/admin/users/:id/role - Change user role
 app.patch(
   "/api/admin/users/:id/role",
+  verifyToken,
+  requireRole(["admin"]),
   async (req: Request<{ id: string }, {}, { role: string }>, res: Response) => {
     const userId = parseInt(req.params.id);
     const { role } = req.body;
@@ -557,7 +603,7 @@ app.patch(
     }
 
     const result = await pool.query(
-      `UPDATE customers SET role = $1 WHERE id = $2 RETURNING id, username, email, role, active`,
+      `UPDATE customers SET role = $1 WHERE id = $2 RETURNING id, email, email, role, active`,
       [role, userId],
     );
 
@@ -572,6 +618,8 @@ app.patch(
 // PATCH /api/admin/users/:id/status - Change user status
 app.patch(
   "/api/admin/users/:id/status",
+  verifyToken,
+  requireRole(["admin"]),
   async (
     req: Request<{ id: string }, {}, { active: boolean }>,
     res: Response,
@@ -580,7 +628,7 @@ app.patch(
     const { active } = req.body;
 
     const result = await pool.query(
-      `UPDATE customers SET active = $1 WHERE id = $2 RETURNING id, username, email, role, active`,
+      `UPDATE customers SET active = $1 WHERE id = $2 RETURNING id, email, email, role, active`,
       [active, userId],
     );
 
@@ -595,31 +643,31 @@ app.patch(
 app.post(
   "/api/auth/register",
   async (
-    req: Request<{}, {}, { username: string; email: string; password: string }>,
+    req: Request<{}, {}, { name: string; email: string; password: string }>,
     res: Response,
   ) => {
-    const { username, email, password } = req.body;
+    const { name, email, password } = req.body;
 
-    if (!username || !email || !password) {
+    if (!email || !email || !password) {
       return res.status(400).json({ error: "Faltan campos requeridos" });
     }
 
     const existing = await pool.query(
-      "SELECT id FROM customers WHERE email = $1 OR username = $2",
-      [email, username],
+      "SELECT id FROM customers WHERE email = $1 OR email = $2",
+      [email, email],
     );
 
     if (existing.rows.length > 0) {
-      return res.status(400).json({ error: "Email o username ya existe" });
+      return res.status(400).json({ error: "Email o email ya existe" });
     }
 
     const password_hash = await bcrypt.hash(password, 10);
 
     const result = await pool.query(
-      `INSERT INTO customers (username, email, password)
+      `INSERT INTO customers (email, email, password)
        VALUES ($1, $2, $3)
-       RETURNING id, username, email`,
-      [username, email, password_hash],
+       RETURNING id, email, email`,
+      [email, email, password_hash],
     );
     res.status(201).json({ message: "Usuario creado", user: result.rows[0] });
   },
@@ -628,47 +676,36 @@ app.post(
 app.post(
   "/api/auth/login",
   async (
-    req: Request<{}, {}, { username: string; password: string }>,
+    req: Request<{}, {}, { identifier: string; password: string }>,
     res: Response,
   ) => {
-    const { username, password } = req.body;
+    const { identifier, password } = req.body;
 
-    if (!username || !password) {
+    if (!identifier || !password) {
       return res.status(400).json({ error: "Faltan campos requeridos" });
     }
 
     const userResult = await pool.query(
-      "SELECT * FROM customers WHERE username = $1",
-      [username],
+      "SELECT * FROM customers WHERE email = $1 OR email = $2",
+      [identifier, identifier],
     );
 
     if (userResult.rows.length === 0) {
-      return res.status(400).json({ error: "Creendiales inválidas" });
+      return res.status(400).json({ error: "Credenciales inválidas" });
     }
 
     const user = userResult.rows[0];
     const validPassword = await bcrypt.compare(password, user.password_hash);
 
     if (!validPassword) {
-      return res.status(400).json({ error: "Creendiales inválidas" });
+      return res.status(400).json({ error: "Credenciales inválidas" });
     }
 
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role },
+      { id: user.id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: "2h" },
     );
-    res.json({
-      message: "Login exitoso",
-      token,
-      customer: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-      },
-    });
-
     res.cookie("token", token, {
       httpOnly: true,
       secure: false,
@@ -678,17 +715,38 @@ app.post(
 
     res.json({
       message: "Login exitoso",
-      token,
+      customer: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
     });
   },
 );
+
+app.get(
+  "/api/auth/me",
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    res.json({ customer: req.customer });
+  },
+);
+
+app.post("/api/auth/logout", (req: Request, res: Response) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+  });
+  res.json({ message: "Logout exitoso" });
+});
 
 app.get(
   "/api/fichajes",
   verifyToken,
   requireRole(["employee", "admin"]),
   (req: AuthRequest, res: Response) => {
-    res.json({ message: "Bienvenido, " + req.customer!.username });
+    res.json({ message: "Bienvenido, " + req.customer!.email });
   },
 );
 // Solo admin

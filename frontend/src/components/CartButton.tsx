@@ -33,7 +33,7 @@ export default function CartButton({
           e.stopPropagation();
           onAddToCart(product);
         }}
-        disabled={quantity >= product.stock || product.stock === 0 || !product.active}
+        disabled={quantity >= product.stock || product.stock === 0}
       >
         🛒
         {quantity > 0 && <span className="qty-badge">{quantity}</span>}

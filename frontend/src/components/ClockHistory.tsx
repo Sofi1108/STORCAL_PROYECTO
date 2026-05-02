@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useUser } from "../context/UserContext";
 
 interface DayGroup {
   in?: string;
@@ -10,16 +11,17 @@ type Grouped = Record<string, DayGroup>;
 export default function ClockHistory() {
   const PORT = 3000;
   const ROUTE = `http://localhost:${PORT}/`;
+  const { customer } = useUser();
 
   const [grouped, setGrouped] = useState<Grouped>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const raw = sessionStorage.getItem("user");
-    const user = raw ? JSON.parse(raw) : null;
-    const employeeId = user?.id ?? 1;
+    const employeeId = customer?.id ?? 1;
 
-    fetch(`${ROUTE}api/clock/history?employeeId=${employeeId}`)
+    fetch(`${ROUTE}api/clock/history?employeeId=${employeeId}`, {
+      credentials: "include",
+    })
       .then((r) => r.json())
       .then((events) => {
         const grouped = events.reduce<Grouped>((acc, ev) => {
@@ -32,7 +34,7 @@ export default function ClockHistory() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [customer]);
 
   const isComplete = (g: DayGroup) => !!g.in && !!g.out;
 

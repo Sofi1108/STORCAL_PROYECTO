@@ -1,15 +1,15 @@
 import { Outlet, NavLink } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 import "./intranet.css";
 
 export default function IntranetLayout() {
-  const raw = sessionStorage.getItem("user");
-  const user = raw ? JSON.parse(raw) : null;
+  const { customer } = useUser();
 
   return (
     <div className="intranet-layout">
       <header className="intranet-header">
         <h2>Intranet</h2>
-        <p>Bienvenida, {user?.username ?? "empleado"}</p>
+        <p>Bienvenida, {customer?.email ?? "empleado"}</p>
       </header>
 
       <nav className="intranet-nav">

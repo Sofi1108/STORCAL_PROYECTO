@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const PORT = 3000;
   const ROUTE = `http://localhost:${PORT}/`;
+  const { setCustomer } = useUser();
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
@@ -18,7 +20,8 @@ export default function LoginPage() {
       const res = await fetch(`${ROUTE}api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        credentials: "include",
+        body: JSON.stringify({ identifier, password }),
       });
 
       const data = await res.json();
@@ -28,7 +31,7 @@ export default function LoginPage() {
         return;
       }
 
-      sessionStorage.setItem("user", JSON.stringify(data.user));
+      setCustomer(data.customer);
       navigate("/intranet");
     } catch (err) {
       setError("Error al conectar con el servidor");
@@ -40,10 +43,10 @@ export default function LoginPage() {
       <form className="auth-form" onSubmit={handleSubmit}>
         <h2>Iniciar sesión</h2>
         <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          type="text"
+          placeholder="Email o nombre de usuario"
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
           required
         />
         <input

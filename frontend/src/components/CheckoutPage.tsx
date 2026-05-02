@@ -38,6 +38,7 @@ export default function CheckoutPage() {
     try {
       const res = await fetch(`${ROUTE}api/orders`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items, address }),
       });

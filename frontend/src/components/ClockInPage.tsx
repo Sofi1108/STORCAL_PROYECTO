@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useUser } from "../context/UserContext";
 
 export default function ClockInPage() {
   const PORT = 3000;
   const ROUTE = `http://localhost:${PORT}/`;
+  const { customer } = useUser();
 
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [note, setNote] = useState("");
@@ -10,28 +12,27 @@ export default function ClockInPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const raw = sessionStorage.getItem("user");
-    const user = raw ? JSON.parse(raw) : null;
-    const employeeId = user?.id ?? 1;
+    const employeeId = customer?.id ?? 1;
 
-    fetch(`${ROUTE}api/clock/status?employeeId=${employeeId}`)
+    fetch(`${ROUTE}api/clock/status?employeeId=${employeeId}`, {
+      credentials: "include",
+    })
       .then((r) => r.json())
       .then((data) => {
         setIsClockedIn(data.isClockedIn);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [customer]);
 
   const handleClock = async () => {
-    const raw = sessionStorage.getItem("user");
-    const user = raw ? JSON.parse(raw) : null;
-    const employeeId = user?.id ?? 1;
+    const employeeId = customer?.id ?? 1;
 
     try {
       const res = await fetch(`${ROUTE}api/clock`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           employeeId,
           type: isClockedIn ? "out" : "in",

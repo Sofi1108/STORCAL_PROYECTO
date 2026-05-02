@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Routes, Route } from "react-router-dom";
+import { useNavigate, Routes, Route } from "react-router-dom";
 
 import type { Product, CartItem } from "./types";
+import { useUser } from "./context/UserContext";
 
+import Header from "./components/Header";
 import ProductCard from "./components/ProductCard";
 import ProductDetail from "./components/ProductDetail";
-import Cart from "./components/Cart";
 import CartButton from "./components/CartButton";
+import CartSummary from "./components/CartSummary";
 
 function App() {
   const navigate = useNavigate();
   const PORT = 3000;
   const ROUTE = `http://localhost:${PORT}/`;
+
+  const { customer, setCustomer, setLoading } = useUser();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [newName, setNewName] = useState("");
@@ -24,6 +27,31 @@ function App() {
     const saved = sessionStorage.getItem("cart");
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Verificar sesión al montar
+  useEffect(() => {
+    const verifySession = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${ROUTE}api/auth/me`, {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCustomer(data.customer);
+        } else if (res.status === 401) {
+          setCustomer(null);
+        }
+      } catch (error) {
+        console.error("Error verificando sesión:", error);
+        setCustomer(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifySession();
+  }, []);
 
   const loadProducts = (): void => {
     fetch(`${ROUTE}api/products`)
@@ -96,6 +124,7 @@ function App() {
     }
     fetch(`${ROUTE}api/products/${id}`, {
       method: "PUT",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stock: newStock }),
     })
@@ -109,7 +138,10 @@ function App() {
 
   const handleDelete = (id: number): void => {
     if (!window.confirm("¿Seguro que quieres borrar este producto?")) return;
-    fetch(`${ROUTE}api/products/${id}`, { method: "DELETE" })
+    fetch(`${ROUTE}api/products/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    })
       .then((res) => {
         if (!res.ok) throw new Error("Error del servidor: " + res.status);
         return res.json();
@@ -125,7 +157,6 @@ function App() {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionStorage.getItem("token")}`,
       },
 
       body: JSON.stringify({
@@ -152,119 +183,141 @@ function App() {
   };
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <>
-            <Cart
-              items={cart}
-              onAddToCart={addToCart}
-              onDecreaseQuantity={decreaseQuantity}
-              onConfirm={() => navigate(`/checkout`)}
-            />
-            <form className="add-product-form" onSubmit={handleSubmit}>
-              <input
-                type="text"
-                placeholder="Nombre *"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
+    <>
+      <Header />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <>
+              <CartSummary
+                items={cart}
+                onAddToCart={addToCart}
+                onDecreaseQuantity={decreaseQuantity}
+                onConfirm={() => {
+                  if (customer) {
+                    navigate("/checkout");
+                  } else {
+                    navigate("/login");
+                  }
+                }}
               />
-              <input
-                type="text"
-                placeholder="Descripción"
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-              />
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Precio *"
-                value={newPrice}
-                onChange={(e) => setNewPrice(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="Categoría"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-              />
-              <input
-                type="number"
-                placeholder="Stock"
-                value={newStock}
-                onChange={(e) => setNewStock(e.target.value)}
-              />
-              <button type="submit">Añadir producto</button>
-            </form>
-            <div className="products-grid">
-              {products.map((product) => (
-                <div key={product.id} className="product-card-container">
-                  <CartButton
-                    product={product}
-                    cart={cart}
-                    onAddToCart={addToCart}
-                    onRemoveFromCart={removeFromCart}
-                    onDecreaseQuantity={decreaseQuantity}
+              {customer?.role === "admin" && (
+                <form className="add-product-form" onSubmit={handleSubmit}>
+                  <input
+                    type="text"
+                    placeholder="Nombre *"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
                   />
-                  <ProductCard
-                    product={product}
-                    onSelect={(id) => navigate(`/product/${id}`)}
+                  <input
+                    type="text"
+                    placeholder="Descripción"
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
                   />
-                  <div className="product-card actions">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUpdateStock(
-                          product.id,
-                          product.name,
-                          product.description,
-                          product.price,
-                          product.category,
-                          product.image_url,
-                          product.stock,
-                        );
-                      }}
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      className="btn-danger"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(product.id);
-                      }}
-                    >
-                      🗑️
-                    </button>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Precio *"
+                    value={newPrice}
+                    onChange={(e) => setNewPrice(e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Categoría"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Stock"
+                    value={newStock}
+                    onChange={(e) => setNewStock(e.target.value)}
+                  />
+                  <button type="submit">Añadir producto</button>
+                </form>
+              )}
+              <div className="products-grid">
+                {products.map((product) => (
+                  <div key={product.id} className="product-card-container">
+                    <CartButton
+                      product={product}
+                      cart={cart}
+                      onAddToCart={addToCart}
+                      onRemoveFromCart={removeFromCart}
+                      onDecreaseQuantity={decreaseQuantity}
+                    />
+                    <ProductCard
+                      product={product}
+                      onSelect={(id) => navigate(`/product/${id}`)}
+                    />
+                    <div className="product-card actions">
+                      {(customer?.role === "admin" ||
+                        customer?.role === "employee") && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUpdateStock(
+                              product.id,
+                              product.name,
+                              product.description,
+                              product.price,
+                              product.category,
+                              product.image_url,
+                              product.stock,
+                            );
+                          }}
+                        >
+                          ✏️
+                        </button>
+                      )}
+                      {customer?.role === "admin" && (
+                        <button
+                          className="btn-danger"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(product.id);
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </>
-        }
-      />
+                ))}
+              </div>
+            </>
+          }
+        />
 
-      <Route
-        path="/product/:id"
-        element={
-          <>
-            <Cart
-              items={cart}
-              onAddToCart={addToCart}
-              onDecreaseQuantity={decreaseQuantity}
-              onConfirm={() => navigate("/checkout")}
-            />
-            <ProductDetail
-              cart={cart}
-              onAddToCart={addToCart}
-              onRemoveFromCart={removeFromCart}
-              onDecreaseQuantity={decreaseQuantity}
-            />
-          </>
-        }
-      />
-    </Routes>
+        <Route
+          path="/product/:id"
+          element={
+            <>
+              <CartSummary
+                items={cart}
+                onAddToCart={addToCart}
+                onDecreaseQuantity={decreaseQuantity}
+                onConfirm={() => {
+                  if (customer) {
+                    navigate("/checkout");
+                  } else {
+                    navigate("/login");
+                  }
+                }}
+              />
+              <ProductDetail
+                cart={cart}
+                onAddToCart={addToCart}
+                onRemoveFromCart={removeFromCart}
+                onDecreaseQuantity={decreaseQuantity}
+              />
+            </>
+          }
+        />
+      </Routes>
+    </>
   );
 }
 

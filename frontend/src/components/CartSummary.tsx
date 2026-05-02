@@ -8,7 +8,12 @@ interface CartProps {
   onConfirm: () => void;
 }
 
-export default function Cart({ items, onDecreaseQuantity, onAddToCart, onConfirm }: CartProps) {
+export default function Cart({
+  items,
+  onDecreaseQuantity,
+  onAddToCart,
+  onConfirm,
+}: CartProps) {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
@@ -36,7 +41,7 @@ export default function Cart({ items, onDecreaseQuantity, onAddToCart, onConfirm
                     ${(item.product.price * item.quantity).toFixed(2)}
                   </span>
 
-                  <button 
+                  <button
                     className="item-btn btn-add"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -56,7 +61,6 @@ export default function Cart({ items, onDecreaseQuantity, onAddToCart, onConfirm
                   >
                     ❌
                   </button>
-
                 </div>
               ))}
             </div>
@@ -64,14 +68,15 @@ export default function Cart({ items, onDecreaseQuantity, onAddToCart, onConfirm
               <div className="cart-total">
                 Total: <strong>${totalPrice.toFixed(2)}</strong>
               </div>
-                <button className="checkout-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onConfirm();
-                    }}
-                  >
-                    Pagar
-                  </button>
+              <button
+                className="checkout-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onConfirm();
+                }}
+              >
+                Ir a pagar
+              </button>
             </div>
           </>
         )}

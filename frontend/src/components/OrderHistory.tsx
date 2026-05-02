@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Order } from "../types";
+import { useUser } from "../context/UserContext";
 import "./checkout.css";
 
 interface OrderDetail extends Order {
@@ -23,21 +24,30 @@ const STATUS_COLORS: Record<string, string> = {
 export default function OrderHistory() {
   const PORT = 3000;
   const ROUTE = `http://localhost:${PORT}/`;
+  const { customer, loading: userLoading } = useUser();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const raw = sessionStorage.getItem("user");
-    const user = raw ? JSON.parse(raw) : null;
+    if (userLoading) {
+      return;
+    }
 
-    if (!user?.id) {
+    if (!customer) {
       setLoading(false);
       return;
     }
 
-    fetch(`${ROUTE}api/orders/customer/${user.id}`)
+    // Determinar el endpoint según el rol del usuario
+    const isAdminOrEmployee =
+      customer.role === "admin" || customer.role === "employee";
+    const endpoint = isAdminOrEmployee ? "api/orders" : "api/orders/my";
+
+    fetch(`${ROUTE}${endpoint}`, {
+      credentials: "include",
+    })
       .then((r) => r.json())
       .then((data) => {
         setOrders(data);
@@ -46,11 +56,13 @@ export default function OrderHistory() {
       .catch(() => {
         setLoading(false);
       });
-  }, []);
+  }, [customer, userLoading]);
 
   const handleRowClick = async (orderId: number) => {
     try {
-      const res = await fetch(`${ROUTE}api/orders/${orderId}`);
+      const res = await fetch(`${ROUTE}api/orders/${orderId}`, {
+        credentials: "include",
+      });
       const data = await res.json();
       setSelectedOrder(data);
     } catch (err) {
